@@ -2218,107 +2218,231 @@ function toggleIntegration(name) {
 /* ===============================================================================
    SCREEN: EMULATOR
    =============================================================================== */
-const EMU_RESPONSES = [
-  'I can help with that! Could you share a bit more detail?',
-  'Thanks for reaching out. Let me look into this for you.',
-  'Great question! Here\'s what I found in our knowledge base: this feature was added in v2.4.',
-  'I\'m checking your account details now. One moment please.',
-  'It looks like your issue has been escalated to our support team. Someone will reach out within 2 hours.',
+/* ─── Emulator: context-aware bot identity ─────────────────────────────── */
+function emuCtx() {
+  const isHair = S.cigData && S.cigData.industry === 'hair-beauty';
+  return {
+    isHair,
+    name:     isHair ? 'Coco'                          : S.botSetupData.displayName,
+    subtitle: isHair ? 'Yuki\'s Hair Studio'           : 'Support Bot',
+    avatar:   isHair ? '💈'                            : '🤖',
+    avatarBg: isHair ? '#fce7f3'                       : '#eef2fd',
+    greeting: isHair
+      ? 'Hi! I\'m Coco, Yuki\'s Hair Studio assistant. How can I help you today?'
+      : 'Hi! I\'m Aria. How can I help you today?',
+  };
+}
+
+/* ─── Hair salon scripted responses ──────────────────────────────────────── */
+const COCO_RESPONSES = [
+  { pattern: /what.*offer|what.*service|what.*do|services|menu/i,
+    intent:'explore_services', conf:96, node:'Explore services',
+    reply: `We offer a full range of hair services:\n\n💇 **Women's Cut** — £35 · 45 min\n🎨 **Cut + Colour** — £85 · 2 hrs\n✨ **Highlights** — £95+ · 2.5 hrs\n💨 **Blowout** — £40 · 45 min\n✂️ **Men's Cut** — £25 · 30 min\n👶 **Kids' Cut** — £18 · 30 min\n\nWould you like to book any of these?`,
+    chips:['Book now','Prices','How long?'] },
+
+  { pattern: /how much|price|cost|charge|fee|£/i,
+    intent:'price_inquiry', conf:93, node:'Price inquiry',
+    reply: `Here\'s our current price list:\n\n💇 Women\'s Cut — **£35**\n🎨 Cut + Colour — **£85**\n✨ Highlights — **from £95**\n💨 Blowout — **£40**\n✂️ Men\'s Cut — **£25**\n👶 Kids\' Cut — **£18**\n\nAll prices include a wash and style. Want to book?`,
+    chips:['Book appointment','How long does it take?'] },
+
+  { pattern: /how long|duration|time|hour|minute/i,
+    intent:'duration_info', conf:88, node:'Duration info',
+    reply: `Typical service durations:\n\n✂️ Cut — **45 minutes**\n🎨 Cut + Colour — **2 hours**\n✨ Full highlights — **2.5–3 hours**\n💨 Blowout — **45 minutes**\n✂️ Men\'s Cut — **30 minutes**\n\nWe\'ll always let you know the exact timing when you book.`,
+    chips:['Book now','See prices'] },
+
+  { pattern: /book|appoint|reserv|schedul|slot|availab/i,
+    intent:'book_appointment', conf:95, node:'Book appointment',
+    reply: `I\'d love to book that for you! 🗓\n\nI have these slots available this week:\n\n**Saturday 10 May**\n[10:00am] [1:00pm] [3:30pm]\n\n**Sunday 11 May**\n[11:00am] [2:00pm]\n\nWhich works for you?`,
+    chips:['10:00am Sat','1:00pm Sat','3:30pm Sat','Another day?'] },
+
+  { pattern: /saturday|sunday|monday|tuesday|wednesday|thursday|friday|weekend|weekday|when|day/i,
+    intent:'book_appointment', conf:91, node:'Book appointment',
+    reply: `I have great availability this week! Here are open slots:\n\n**Sat 10 May** · 10am · 1pm · 3:30pm\n**Sun 11 May** · 11am · 2pm\n**Mon 12 May** · 9:30am · 12pm · 4pm\n\nWhich day and time works best for you?`,
+    chips:['Saturday','Sunday','Monday'] },
+
+  { pattern: /colour|color|highlight|tint|balayage|ombre/i,
+    intent:'price_inquiry', conf:89, node:'Price inquiry',
+    reply: `Our colour services:\n\n🎨 **Cut + Colour** — £85 (most popular!)\n✨ **Full Highlights** — from £95\n🌿 **Balayage** — from £120\n🎨 **Tint only** — from £55\n\nAll include a toner and blow-dry. Fancy booking one in?`,
+    chips:['Book colour service','See all prices'] },
+
+  { pattern: /cancel|rebook|reschedul|change|move/i,
+    intent:'open_qa', conf:84, node:'Open Q&A',
+    reply: `No problem! Our cancellation policy:\n\n• Cancel **24+ hours** before — fully refunded\n• Cancel **under 24 hours** — 50% charge applies\n• Need to reschedule? Just reply here and I\'ll sort it\n\nWant me to help you rebook?`,
+    chips:['Yes, rebook please','Cancel instead'] },
+
+  { pattern: /park|where|location|address|find|direc|map/i,
+    intent:'open_qa', conf:82, node:'Open Q&A',
+    reply: `We\'re at **12 Bloom Street, W1F 4AB** 📍\n\n🚗 **Parking:** Free 2-hour parking on Bridge Lane (2 min walk)\n🚇 **Tube:** Oxford Circus — 5 min walk\n🚌 **Bus:** Routes 55, 73, 98 stop outside\n\nSee you soon! Anything else I can help with?` },
+
+  { pattern: /confirm|thank|perfect|great|amazing|booked|yes/i,
+    intent:'confirm_booking', conf:97, node:'Confirm booking',
+    reply: `**Booked!** 🎉\n\nHere\'s your confirmation:\n\n📋 **Cut + Colour**\n📅 Saturday 10 May · 1:00pm\n📍 Yuki\'s Hair Studio, 12 Bloom St\n👤 With: Yuki\n🔖 Ref: #YHS-${Math.floor(Math.random()*900+100)}\n\nConfirmation sent to your email. See you Saturday! 💈`,
+    chips:['Add to calendar','Get directions'] },
+
+  { pattern: /gents|men|male|barber|beard/i,
+    intent:'explore_services', conf:86, node:'Explore services',
+    reply: `We do! Our men\'s services:\n\n✂️ **Men\'s Cut** — £25 · 30 min\n🧔 **Cut + Beard Trim** — £35 · 45 min\n\nYuki and the team are experienced with all hair types. Want to book?`,
+    chips:['Book men\'s cut','See all services'] },
+
+  { pattern: /kid|child|boy|girl|junior|young/i,
+    intent:'explore_services', conf:88, node:'Explore services',
+    reply: `Yes, we welcome children! 👶\n\n✂️ **Kids\' Cut** (under 12) — £18 · 30 min\n\nWe recommend booking a quieter morning slot. Want me to check availability?`,
+    chips:['Check kids\' slots','See adult services'] },
 ];
 
+const GENERIC_RESPONSES = [
+  'I can help with that! Could you share a bit more detail?',
+  'Thanks for reaching out. Let me look into this for you.',
+  'Great question! Here\'s what I found in our knowledge base.',
+  'I\'m checking that for you now. One moment please.',
+  'Our team will follow up with you within 2 hours.',
+];
+
+function emuReply(txt) {
+  const ctx = emuCtx();
+  if (!ctx.isHair) return { text: GENERIC_RESPONSES[Math.floor(Math.random() * GENERIC_RESPONSES.length)], intent:'general', conf:72, node:'FAQ Reply', chips:[] };
+  const lower = txt.toLowerCase();
+  const match = COCO_RESPONSES.find(r => r.pattern.test(lower));
+  if (match) return { text: match.reply.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>'), intent: match.intent, conf: match.conf, node: match.node, chips: match.chips || [] };
+  return { text: 'Great question! Let me check that for you. 💬<br><br>Is there anything else I can help with — services, prices, or booking?', intent:'open_qa', conf:64, node:'Open Q&A', chips:['See services','Book appointment','Prices'] };
+}
+
+/* ─── Live debug state ───────────────────────────────────────────────────── */
+const emuDebug = { intent:'greeting', conf:100, node:'Greet', turn:1, startTime: Date.now() };
+
+function emuDebugHtml(ctx) {
+  const elapsed = Math.round((Date.now() - emuDebug.startTime) / 1000);
+  const mins = Math.floor(elapsed / 60), secs = elapsed % 60;
+  const dur = `${mins}m ${secs}s`;
+  const intents = ctx.isHair
+    ? [[emuDebug.intent, emuDebug.conf,'#10b981'],['open_qa',Math.max(0,emuDebug.conf-25),'#2255e8'],['book_appointment',Math.max(0,emuDebug.conf-40),'#8b5cf6'],['escalate',4,'#9ca3af']]
+    : [['password_reset',94,'#10b981'],['account_access',71,'#2255e8'],['billing_query',12,'#f59e0b'],['feature_request',4,'#9ca3af']];
+  const topEntity = ctx.isHair
+    ? emuDebug.intent === 'book_appointment' ? [['Service','Cut + Colour'],['Day','Saturday']] : emuDebug.intent === 'price_inquiry' ? [['Service','Cut + Colour']] : []
+    : [['email','sarah@…'],['action','reset']];
+  const pathNodes = ctx.isHair
+    ? ['Greet', ...new Set(S.emuMessages.filter(m=>m.role==='bot'&&m._node).map(m=>m._node))].slice(-3)
+    : ['Start','Welcome Msg','Intent Check','FAQ Reply'];
+
+  return `
+    <div class="debug-section">
+      <p class="debug-lbl">Intent Recognition</p>
+      <div class="debug-item"><span class="debug-key">Top intent</span><span class="debug-val">${emuDebug.intent}</span></div>
+      <div class="debug-item"><span class="debug-key">Confidence</span><span class="debug-val">${(emuDebug.conf/100).toFixed(2)}</span></div>
+      ${topEntity.map(([k,v])=>`<div class="debug-item"><span class="debug-key">Entity: ${k}</span><span class="debug-val">${v}</span></div>`).join('')}
+    </div>
+    <div class="debug-section">
+      <p class="debug-lbl">All Intents</p>
+      ${intents.map(([l,c,col]) => `
+        <div class="conf-mini">
+          <span style="width:110px;color:#6b7280;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l}</span>
+          <div class="conf-mini-bar"><div class="conf-mini-fill" style="width:${c}%;background:${col}"></div></div>
+          <span style="min-width:28px;text-align:right;font-size:10px;font-weight:600;color:#374151">${c}%</span>
+        </div>`).join('')}
+    </div>
+    <div class="debug-section">
+      <p class="debug-lbl">CIG node path</p>
+      <div class="flow-path">
+        ${pathNodes.map((n,i) => `${i>0?'<span class="path-arrow">›</span>':''}<span class="path-node" style="${i===pathNodes.length-1?'background:#eef2fd;color:#2255e8':''}">${n}</span>`).join('')}
+      </div>
+    </div>
+    <div class="debug-section">
+      <p class="debug-lbl">Session</p>
+      <div class="debug-item"><span class="debug-key">Turn</span><span class="debug-val">${emuDebug.turn} / 8</span></div>
+      <div class="debug-item"><span class="debug-key">Duration</span><span class="debug-val">${dur}</span></div>
+      <div class="debug-item"><span class="debug-key">CIG</span><span class="debug-val">${ctx.isHair ? 'Hair salon' : 'Support bot'}</span></div>
+      <div class="debug-item"><span class="debug-key">Mode</span><span class="debug-val">Bot</span></div>
+    </div>`;
+}
+
+function emuMsgHtml(m, ctx) {
+  const isBot = m.role === 'bot';
+  return `<div class="msg ${m.role}">
+    ${isBot ? `<div class="msg-avatar" style="background:${ctx.avatarBg};color:#1a1d2e;font-size:14px">${ctx.avatar}</div>` : ''}
+    <div>
+      <div class="msg-bubble">${m.text}</div>
+      ${m.chips && m.chips.length ? `<div class="script-chips" style="margin-top:5px">${m.chips.map(c=>`<span class="script-chip" onclick="emuChipClick('${c.replace(/'/g,"\\'")}')">${c}</span>`).join('')}</div>` : ''}
+    </div>
+    ${!isBot ? `<div class="msg-avatar" style="background:#1a1d2e;color:#fff;font-size:11px">U</div>` : ''}
+  </div>`;
+}
+
 function screenEmulator() {
+  const ctx = emuCtx();
+  // Seed Coco greeting if switching context
+  if (ctx.isHair && S.emuMessages.length === 1 && S.emuMessages[0].text.includes('Aria')) {
+    S.emuMessages = [{ role:'bot', text:`Hi! I\'m <strong>${ctx.name}</strong> from ${ctx.subtitle}. How can I help you today? 💈`, chips:['Book appointment','See services & prices','Ask a question'] }];
+    emuDebug.turn = 1; emuDebug.startTime = Date.now(); emuDebug.intent = 'greeting'; emuDebug.conf = 100; emuDebug.node = 'Greet';
+  }
   return `
   <div class="emu-layout" style="margin-top:0">
     <div class="emu-chat">
       <div class="emu-chat-hdr">
-        <div class="fn-icon" style="background:#2255e8;font-size:13px">🤖</div>
-        <div><div style="font-size:12px;font-weight:600">${S.botSetupData.displayName}</div><div class="text-subtle text-xs">Emulator · Support Bot</div></div>
+        <div class="fn-icon" style="background:${ctx.avatarBg};font-size:16px;width:32px;height:32px">${ctx.avatar}</div>
+        <div>
+          <div style="font-size:12px;font-weight:600">${ctx.name}</div>
+          <div class="text-subtle text-xs">Preview · ${ctx.subtitle}</div>
+        </div>
         <span class="badge badge-green" style="margin-left:auto">● Live</span>
       </div>
       <div class="emu-chat-msgs" id="emu-msgs">
-        ${S.emuMessages.map(m => `
-          <div class="msg ${m.role}">
-            ${m.role === 'bot' ? `<div class="msg-avatar" style="background:#eef2fd;color:#2255e8">🤖</div>` : ''}
-            <div class="msg-bubble">${m.text}</div>
-            ${m.role === 'user' ? `<div class="msg-avatar" style="background:#1a1d2e;color:#fff">U</div>` : ''}
-          </div>`).join('')}
+        ${S.emuMessages.map(m => emuMsgHtml(m, ctx)).join('')}
       </div>
       <div class="emu-input-row">
-        <input class="emu-fi" id="emu-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter')emuSend()">
+        <input class="emu-fi" id="emu-input" placeholder="Type a message to ${ctx.name}…" onkeydown="if(event.key==='Enter')emuSend()">
         <button class="btn btn-primary btn-sm" onclick="emuSend()">${ICO.send}</button>
       </div>
     </div>
     <div class="emu-debug">
       <div class="emu-debug-hdr">
         <span style="font-size:12px;font-weight:600">Debug panel</span>
-        <span class="badge badge-blue">Live</span>
+        <span class="badge badge-${ctx.isHair ? 'green' : 'blue'}">${ctx.isHair ? ctx.name : 'LIVE'}</span>
       </div>
-      <div class="emu-debug-body">
-        <div class="debug-section">
-          <p class="debug-lbl">Intent Recognition</p>
-          ${[
-            ['Top intent','password_reset'],['Confidence','0.94'],['Entity: email','sarah@…'],['Entity: action','reset'],
-          ].map(([k,v]) => `<div class="debug-item"><span class="debug-key">${k}</span><span class="debug-val">${v}</span></div>`).join('')}
-        </div>
-        <div class="debug-section">
-          <p class="debug-lbl">All Intents</p>
-          ${[['password_reset',94,'#10b981'],['account_access',71,'#2255e8'],['billing_query',12,'#f59e0b'],['feature_request',4,'#9ca3af']].map(([l,c,col]) => `
-            <div class="conf-mini">
-              <span style="width:110px;color:#6b7280;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l}</span>
-              <div class="conf-mini-bar"><div class="conf-mini-fill" style="width:${c}%;background:${col}"></div></div>
-              <span style="min-width:28px;text-align:right;font-size:10px;font-weight:600;color:#374151">${c}%</span>
-            </div>`).join('')}
-        </div>
-        <div class="debug-section">
-          <p class="debug-lbl">Flow path</p>
-          <div class="flow-path">
-            <span class="path-node">Start</span>
-            <span class="path-arrow">›</span>
-            <span class="path-node">Welcome Msg</span>
-            <span class="path-arrow">›</span>
-            <span class="path-node">Intent Check</span>
-            <span class="path-arrow">›</span>
-            <span class="path-node badge-blue" style="background:#eef2fd;color:#2255e8">FAQ Reply</span>
-          </div>
-        </div>
-        <div class="debug-section">
-          <p class="debug-lbl">Session</p>
-          ${[['Turn','3 / 6'],['Duration','1m 24s'],['Mode','Bot'],['Lang','en-US']].map(([k,v]) => `
-            <div class="debug-item"><span class="debug-key">${k}</span><span class="debug-val">${v}</span></div>`).join('')}
-        </div>
-      </div>
+      <div class="emu-debug-body" id="emu-debug-body">${emuDebugHtml(ctx)}</div>
     </div>
   </div>`;
 }
 
-function emuSend() {
-  const fi = document.getElementById('emu-input');
-  if (!fi || !fi.value.trim()) return;
-  const txt = fi.value.trim();
-  fi.value = '';
-  S.emuMessages.push({ role: 'user', text: txt });
-  setTimeout(() => {
-    S.emuMessages.push({ role: 'bot', text: EMU_RESPONSES[Math.floor(Math.random() * EMU_RESPONSES.length)] });
-    const msgs = document.getElementById('emu-msgs');
-    if (msgs) {
-      msgs.innerHTML = S.emuMessages.map(m => `
-        <div class="msg ${m.role}">
-          ${m.role === 'bot' ? `<div class="msg-avatar" style="background:#eef2fd;color:#2255e8">🤖</div>` : ''}
-          <div class="msg-bubble">${m.text}</div>
-          ${m.role === 'user' ? `<div class="msg-avatar" style="background:#1a1d2e;color:#fff">U</div>` : ''}
-        </div>`).join('');
-      msgs.scrollTop = msgs.scrollHeight;
-    }
-  }, 800);
+function emuSend(txt) {
+  const ctx = emuCtx();
+  if (!txt) {
+    const fi = document.getElementById('emu-input');
+    if (!fi || !fi.value.trim()) return;
+    txt = fi.value.trim();
+    fi.value = '';
+  }
   const msgs = document.getElementById('emu-msgs');
+  const userMsg = { role:'user', text: txt };
+  S.emuMessages.push(userMsg);
   if (msgs) {
-    msgs.innerHTML += `<div class="msg user"><div class="msg-bubble" style="background:#2255e8;color:#fff;border-bottom-right-radius:4px">${txt}</div><div class="msg-avatar" style="background:#1a1d2e;color:#fff">U</div></div>`;
+    msgs.innerHTML += emuMsgHtml(userMsg, ctx);
     msgs.scrollTop = msgs.scrollHeight;
   }
+  emuDebug.turn++;
+  setTimeout(() => {
+    const reply = emuReply(txt);
+    emuDebug.intent = reply.intent; emuDebug.conf = reply.conf; emuDebug.node = reply.node;
+    const botMsg = { role:'bot', text: reply.text, chips: reply.chips || [], _node: reply.node };
+    S.emuMessages.push(botMsg);
+    const msgsEl = document.getElementById('emu-msgs');
+    if (msgsEl) {
+      msgsEl.innerHTML += emuMsgHtml(botMsg, ctx);
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+    }
+    const dbg = document.getElementById('emu-debug-body');
+    if (dbg) dbg.innerHTML = emuDebugHtml(ctx);
+  }, 650);
 }
 
+function emuChipClick(txt) { emuSend(txt); }
+
 function resetEmu() {
-  S.emuMessages = [{ role: 'bot', text: 'Hi! I\'m Aria. How can I help you today?' }];
+  const ctx = emuCtx();
+  emuDebug.turn = 1; emuDebug.startTime = Date.now(); emuDebug.intent = 'greeting'; emuDebug.conf = 100; emuDebug.node = 'Greet';
+  S.emuMessages = [{ role:'bot', text: ctx.isHair
+    ? `Hi! I\'m <strong>${ctx.name}</strong> from ${ctx.subtitle}. How can I help you today? 💈`
+    : `Hi! I\'m ${ctx.name}. How can I help you today?`,
+    chips: ctx.isHair ? ['Book appointment','See services & prices','Ask a question'] : [] }];
   render();
 }
 
