@@ -1,0 +1,1994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BotStudio</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─── Reset & Base ─────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',system-ui,sans-serif;font-size:12px;color:#1a1d2e;background:#f4f5f9;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font-family:inherit;font-size:inherit}
+input[type=range]{-webkit-appearance:none;appearance:none}
+svg{display:block}
+
+/* ─── App Shell ─────────────────────────────────────────────────────────────── */
+#app{display:flex;height:100vh;overflow:hidden}
+#sidebar{width:220px;flex-shrink:0;background:#fff;border-right:1px solid #e0e3ef;display:flex;flex-direction:column;overflow:hidden}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#topbar{height:52px;background:#fff;border-bottom:1px solid #e0e3ef;display:flex;align-items:center;padding:0 20px;flex-shrink:0;gap:8px}
+#content{flex:1;overflow-y:auto;padding:20px;min-height:0}
+
+/* ─── Sidebar ────────────────────────────────────────────────────────────────── */
+.sb-brand{padding:14px 16px;border-bottom:1px solid #e0e3ef;flex-shrink:0}
+.sb-logo{display:flex;align-items:center;gap:9px}
+.sb-logo-icon{width:30px;height:30px;background:#2255e8;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-logo-text{font-size:15px;font-weight:600;color:#1a1d2e;letter-spacing:-.3px}
+.sb-nav{flex:1;overflow-y:auto;padding:6px 0}
+.sb-group-lbl{padding:10px 16px 3px;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;user-select:none}
+.sb-item{display:flex;align-items:center;gap:9px;padding:7px 16px;cursor:pointer;color:#6b7280;transition:background .12s,color .12s;position:relative}
+.sb-item:hover{background:#f4f5f9;color:#1a1d2e}
+.sb-item.active{background:#eef2fd;color:#2255e8;font-weight:500}
+.sb-item.muted{opacity:.3;pointer-events:none!important;cursor:default}
+.sb-item svg{flex-shrink:0;width:15px;height:15px}
+.sb-item span{font-size:12px}
+.sb-bots{border-top:1px solid #e0e3ef;padding:12px 14px;flex-shrink:0}
+.sb-bots-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.sb-bots-lbl{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af}
+.new-bot-btn{display:flex;align-items:center;gap:3px;font-size:11px;font-weight:500;color:#2255e8;cursor:pointer;padding:3px 7px;border-radius:6px;border:none;background:transparent;transition:background .12s}
+.new-bot-btn:hover{background:#eef2fd}
+.bot-row{display:flex;align-items:center;gap:8px;padding:5px 2px;cursor:pointer;border-radius:6px;transition:background .12s}
+.bot-row:hover{background:#f4f5f9}
+.bot-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.bot-dot.live{background:#10b981}
+.bot-dot.draft{background:#9ca3af}
+.bot-dot.paused{background:#f59e0b}
+.bot-name{font-size:12px;color:#374151;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bot-badge{font-size:9px;font-weight:600;padding:1px 5px;border-radius:4px;text-transform:uppercase;letter-spacing:.05em}
+.bot-badge.live{background:#d1fae5;color:#065f46}
+.bot-badge.draft{background:#f3f4f6;color:#6b7280}
+.bot-badge.paused{background:#fef3c7;color:#92400e}
+
+/* ─── Topbar common ─────────────────────────────────────────────────────────── */
+.tb-title{font-size:14px;font-weight:600;color:#1a1d2e;white-space:nowrap}
+.tb-sub{font-size:12px;color:#9ca3af;white-space:nowrap}
+.tb-divider{width:1px;height:20px;background:#e0e3ef;flex-shrink:0}
+.tb-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+.tb-tabs{display:flex;align-items:center;gap:2px;background:#f4f5f9;border-radius:8px;padding:3px}
+.tb-tab{padding:4px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;color:#6b7280;border:none;background:transparent;transition:background .12s,color .12s}
+.tb-tab.active{background:#fff;color:#1a1d2e;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:opacity .12s,background .12s;white-space:nowrap}
+.btn:hover{opacity:.85}
+.btn-primary{background:#2255e8;color:#fff}
+.btn-secondary{background:transparent;color:#2255e8;border:1.5px solid #2255e8}
+.btn-ghost{background:transparent;color:#6b7280;border:1.5px solid #e0e3ef}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:6px}
+.btn-danger{background:#ef4444;color:#fff}
+.btn-green{background:#10b981;color:#fff}
+
+/* ─── Cards ─────────────────────────────────────────────────────────────────── */
+.card{background:#fff;border:1px solid #e0e3ef;border-radius:12px;padding:14px}
+.card-title{font-size:13px;font-weight:600;color:#1a1d2e;margin-bottom:3px}
+.card-sub{font-size:11px;color:#6b7280;margin-bottom:12px}
+.card-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+
+/* ─── Grid helpers ───────────────────────────────────────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.span2{grid-column:span 2}
+
+/* ─── Forms ─────────────────────────────────────────────────────────────────── */
+.fg{margin-bottom:11px}
+.fg:last-child{margin-bottom:0}
+.fl{display:block;font-size:11px;font-weight:500;color:#374151;margin-bottom:4px}
+.fi,.fs,.fta{width:100%;padding:7px 10px;border:1.5px solid #e0e3ef;border-radius:8px;font-size:12px;color:#1a1d2e;background:#fff;outline:none;transition:border-color .12s}
+.fi:focus,.fs:focus,.fta:focus{border-color:#2255e8}
+.fta{resize:vertical;min-height:76px;line-height:1.5}
+.fs{appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.fi-row{display:flex;gap:8px;align-items:flex-start}
+.fi-row .fi{flex:1}
+.fi-inline{padding:5px 8px;border:1.5px solid #e0e3ef;border-radius:7px;font-size:12px;color:#1a1d2e;background:#fff;outline:none;transition:border-color .12s;width:auto}
+.fi-inline:focus{border-color:#2255e8}
+.toggle{position:relative;display:inline-block;width:34px;height:18px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-slider{position:absolute;inset:0;background:#e0e3ef;border-radius:9px;cursor:pointer;transition:background .2s}
+.toggle-slider::after{content:'';position:absolute;left:2px;top:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:transform .2s}
+.toggle input:checked+.toggle-slider{background:#2255e8}
+.toggle input:checked+.toggle-slider::after{transform:translateX(16px)}
+
+/* ─── Badges & chips ─────────────────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.badge-green{background:#d1fae5;color:#065f46}
+.badge-red{background:#fee2e2;color:#991b1b}
+.badge-amber{background:#fef3c7;color:#92400e}
+.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-gray{background:#f3f4f6;color:#6b7280}
+.badge-purple{background:#ede9fe;color:#5b21b6}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot-green{background:#10b981}
+.dot-red{background:#ef4444}
+.dot-amber{background:#f59e0b}
+.dot-gray{background:#9ca3af}
+
+/* ─── Dashboard ──────────────────────────────────────────────────────────────── */
+.metric-val{font-size:26px;font-weight:600;color:#1a1d2e;line-height:1;margin-bottom:3px}
+.metric-lbl{font-size:11px;color:#6b7280;margin-bottom:8px}
+.metric-delta{font-size:11px;font-weight:500;display:inline-flex;align-items:center;gap:3px}
+.delta-up{color:#10b981}
+.delta-dn{color:#ef4444}
+.sparkline-wrap{margin-top:10px}
+canvas.sparkline{display:block;width:100%;height:44px}
+.agent-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f2f7}
+.agent-row:last-child{border-bottom:none}
+.agent-name{flex:1;font-size:12px;font-weight:500;color:#1a1d2e}
+.agent-stat{font-size:11px;color:#6b7280;min-width:40px;text-align:right}
+canvas.barchart{display:block;width:100%;height:140px}
+.activity-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f0f2f7}
+.activity-item:last-child{border-bottom:none}
+.activity-icon{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.activity-text{flex:1;font-size:11px;color:#374151;line-height:1.5}
+.activity-text strong{color:#1a1d2e;font-weight:500}
+.activity-time{font-size:10px;color:#9ca3af;white-space:nowrap}
+.section-hdr{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;margin-bottom:10px}
+
+/* ─── Wizard ─────────────────────────────────────────────────────────────────── */
+.wiz-wrap{display:grid;grid-template-columns:270px 1fr 250px;gap:16px;height:calc(100vh - 52px - 40px)}
+.wiz-preview{background:#fff;border:1px solid #e0e3ef;border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.wiz-prev-hdr{padding:11px 13px;border-bottom:1px solid #e0e3ef;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.wiz-prev-avatar{width:28px;height:28px;background:#eef2fd;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.wiz-prev-meta{min-width:0}
+.wiz-prev-name{font-size:12px;font-weight:600;color:#1a1d2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wiz-prev-status{font-size:10px;color:#10b981}
+.wiz-chat-area{flex:1;padding:12px;overflow-y:auto;background:#f8f9fc;display:flex;flex-direction:column;gap:8px}
+.wiz-chat-input{padding:10px 12px;border-top:1px solid #e0e3ef;display:flex;gap:6px;background:#fff;flex-shrink:0}
+.wiz-chat-fi{flex:1;padding:6px 10px;border:1.5px solid #e0e3ef;border-radius:20px;font-size:12px;outline:none;transition:border-color .12s}
+.wiz-chat-fi:focus{border-color:#2255e8}
+.wiz-steps-col{overflow-y:auto;padding-right:2px}
+.wiz-step{border:1.5px solid #e0e3ef;border-radius:10px;margin-bottom:8px;overflow:hidden;transition:border-color .15s}
+.wiz-step.active-step{border-color:#2255e8}
+.wiz-step-hdr{padding:11px 13px;cursor:pointer;display:flex;align-items:center;gap:9px;background:#fff;user-select:none}
+.wiz-step-hdr:hover{background:#fafbfe}
+.wiz-step-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.wiz-step-num.done{background:#10b981;color:#fff}
+.wiz-step-num.active{background:#2255e8;color:#fff}
+.wiz-step-num.pending{background:#f0f2f7;color:#9ca3af}
+.wiz-step-title{font-size:12px;font-weight:500;color:#1a1d2e}
+.wiz-step-desc{font-size:11px;color:#9ca3af;margin-left:auto;white-space:nowrap}
+.wiz-step-body{padding:14px;border-top:1.5px solid #e0e3ef;background:#fafbfe}
+.wiz-step-body.closed{display:none}
+.wiz-step-foot{margin-top:12px;display:flex;justify-content:flex-end}
+.wiz-right-col{display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+.checklist-title{font-size:12px;font-weight:600;color:#1a1d2e;margin-bottom:10px}
+.check-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;color:#374151;border-bottom:1px solid #f0f2f7}
+.check-item:last-child{border-bottom:none}
+.check-ico{width:17px;height:17px;border-radius:50%;border:1.5px solid #e0e3ef;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s}
+.check-ico.done{background:#10b981;border-color:#10b981}
+.golive-card{border:1.5px dashed #e0e3ef;border-radius:12px;padding:14px;background:#fafbfe;transition:all .2s}
+.golive-card.unlocked{border-style:solid;border-color:#2255e8;background:#fff}
+.golive-title{font-size:13px;font-weight:600;color:#1a1d2e;margin-bottom:3px}
+.golive-sub{font-size:11px;color:#6b7280;margin-bottom:12px}
+.step-pills{display:flex;align-items:center;gap:4px}
+.step-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.step-pill.done{background:#d1fae5;color:#065f46}
+.step-pill.active{background:#2255e8;color:#fff}
+.step-pill.pending{background:#f0f2f7;color:#9ca3af;cursor:default}
+.step-arrow{color:#d1d5db;font-size:12px}
+
+/* ─── Bot setup ──────────────────────────────────────────────────────────────── */
+.prompt-preview{background:#1a1d2e;border-radius:10px;padding:13px;font-size:11px;color:#e2e8f0;line-height:1.6;font-family:'SF Mono',Consolas,monospace;white-space:pre-wrap;word-break:break-word;border:none;width:100%;outline:none;resize:none;min-height:100px}
+.channel-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f2f7}
+.channel-row:last-child{border-bottom:none}
+.channel-info{display:flex;align-items:center;gap:8px}
+.channel-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.channel-name{font-size:12px;font-weight:500;color:#1a1d2e}
+.channel-sub{font-size:10px;color:#9ca3af}
+.tone-btn{padding:5px 11px;border-radius:6px;font-size:11px;cursor:pointer;border:1.5px solid #e0e3ef;background:transparent;color:#6b7280;transition:all .12s}
+.tone-btn.active{border-color:#2255e8;background:#eef2fd;color:#2255e8;font-weight:500}
+
+/* ─── Flow Builder ───────────────────────────────────────────────────────────── */
+.flow-layout{display:flex;height:calc(100vh - 52px - 40px);overflow:hidden;border-radius:12px;border:1px solid #e0e3ef;background:#fff}
+.flow-palette{width:188px;flex-shrink:0;border-right:1px solid #e0e3ef;padding:12px;overflow-y:auto}
+.flow-canvas-wrap{flex:1;position:relative;overflow:hidden;background:#f8f9fc;background-image:radial-gradient(circle,#d1d5e0 1px,transparent 1px);background-size:20px 20px;cursor:default}
+.flow-inspector{width:240px;flex-shrink:0;border-left:1px solid #e0e3ef;padding:14px;overflow-y:auto}
+.palette-section{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;margin:10px 0 6px}
+.palette-section:first-child{margin-top:0}
+.pal-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid #e0e3ef;border-radius:8px;cursor:pointer;margin-bottom:5px;font-size:12px;color:#374151;transition:border-color .12s,background .12s,color .12s;user-select:none}
+.pal-item:hover{border-color:#2255e8;background:#f8f9ff;color:#2255e8}
+.pal-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.flow-node{position:absolute;user-select:none;cursor:grab}
+.flow-node:active{cursor:grabbing}
+.fn-body{display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:10px;border:1.5px solid #e0e3ef;background:#fff;min-width:110px;position:relative;transition:border-color .15s,box-shadow .15s}
+.fn-body.selected{border-color:#2255e8;box-shadow:0 0 0 3px #dbeafe}
+.fn-icon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#fff}
+.fn-label{font-size:11px;font-weight:500;color:#1a1d2e}
+.fn-sub{font-size:10px;color:#9ca3af}
+.fn-port{width:10px;height:10px;border-radius:50%;border:2px solid #fff;position:absolute;top:50%;transform:translateY(-50%);cursor:crosshair}
+.fn-port.out{right:-6px;background:#9ca3af}
+.fn-port.in{left:-6px;background:#9ca3af}
+.fn-port:hover{background:#2255e8}
+.fn-start-circle{width:44px;height:44px;border-radius:50%;background:#10b981;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 0 0 1.5px #e0e3ef}
+.fn-end-circle{width:44px;height:44px;border-radius:50%;background:#ef4444;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 0 0 1.5px #e0e3ef}
+.fn-start-circle.selected,.fn-end-circle.selected{box-shadow:0 0 0 3px #dbeafe}
+.flow-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.inspector-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:120px;color:#9ca3af;font-size:12px;gap:6px}
+.ins-section{margin-bottom:14px}
+.ins-hdr{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;margin-bottom:8px}
+.conn-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;background:#f0f2f7;font-size:11px;color:#374151;margin-bottom:4px}
+
+/* Journey view */
+.journey-wrap{overflow:auto;height:calc(100vh - 52px - 40px)}
+.journey-table{min-width:800px;border-collapse:separate;border-spacing:0;width:100%}
+.journey-table th{background:#fff;padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#6b7280;border-bottom:1.5px solid #e0e3ef;position:sticky;top:0;z-index:1;white-space:nowrap}
+.journey-table th:first-child{color:#9ca3af;font-size:10px;text-transform:uppercase;letter-spacing:.07em;width:110px}
+.journey-table td{padding:12px 14px;border-bottom:1px solid #f0f2f7;vertical-align:top;font-size:12px;color:#374151}
+.journey-table td:first-child{font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;background:#fafbfe;white-space:nowrap}
+.journey-table tr:last-child td{border-bottom:none}
+.emoji-big{font-size:20px;line-height:1.2}
+.dp-bar{height:6px;border-radius:3px;background:#ef4444;margin-top:5px;opacity:.8}
+.opp-tag{display:inline-block;background:#eef2fd;color:#2255e8;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:500;margin:2px 2px 0 0}
+
+/* ─── Agent Assist ───────────────────────────────────────────────────────────── */
+.assist-layout{display:flex;height:calc(100vh - 52px - 40px);border:1px solid #e0e3ef;border-radius:12px;overflow:hidden;background:#fff}
+.assist-inbox{width:255px;flex-shrink:0;border-right:1px solid #e0e3ef;overflow-y:auto}
+.assist-thread{flex:1;display:flex;flex-direction:column;background:#f8f9fc;min-width:0}
+.assist-right{width:272px;flex-shrink:0;border-left:1px solid #e0e3ef;display:flex;flex-direction:column;background:#fff}
+.inbox-search{padding:10px 12px;border-bottom:1px solid #e0e3ef}
+.inbox-search-fi{width:100%;padding:6px 10px 6px 30px;border:1.5px solid #e0e3ef;border-radius:8px;font-size:12px;outline:none;background:#f8f9fc url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='6' cy='6' r='4' stroke='%239ca3af' stroke-width='1.5'/%3E%3Cpath d='M9 9l3 3' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat 9px center;transition:border-color .12s}
+.inbox-search-fi:focus{border-color:#2255e8;background-color:#fff}
+.inbox-item{padding:11px 13px;border-bottom:1px solid #f0f2f7;cursor:pointer;transition:background .12s}
+.inbox-item:hover{background:#f8f9fc}
+.inbox-item.active{background:#eef2fd}
+.inbox-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;gap:6px}
+.inbox-name{font-size:12px;font-weight:500;color:#1a1d2e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inbox-time{font-size:10px;color:#9ca3af;flex-shrink:0}
+.inbox-preview{font-size:11px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inbox-meta{display:flex;align-items:center;gap:5px;margin-top:4px}
+.thread-hdr{padding:11px 14px;border-bottom:1px solid #e0e3ef;background:#fff;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.thread-user-name{font-size:13px;font-weight:600;color:#1a1d2e;flex:1}
+.thread-msgs{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:10px}
+.msg{display:flex;align-items:flex-end;gap:7px}
+.msg.user{flex-direction:row-reverse}
+.msg-avatar{width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0}
+.msg-bubble{max-width:72%;padding:8px 11px;border-radius:12px;font-size:12px;line-height:1.5;word-break:break-word}
+.msg.user .msg-bubble{background:#2255e8;color:#fff;border-bottom-right-radius:4px}
+.msg.bot .msg-bubble{background:#fff;border:1.5px solid #e0e3ef;color:#1a1d2e;border-bottom-left-radius:4px}
+.msg.agent .msg-bubble{background:#ecfdf5;border:1.5px solid #d1fae5;color:#065f46;border-bottom-left-radius:4px}
+.msg-meta{font-size:10px;color:#9ca3af;margin:0 4px;flex-shrink:0}
+.msg-label{font-size:10px;font-weight:500;margin-bottom:3px}
+.msg-label.bot{color:#6b7280}
+.msg-label.agent{color:#059669}
+.thread-input-wrap{padding:11px 13px;border-top:1px solid #e0e3ef;background:#fff;flex-shrink:0}
+.thread-toolbar{display:flex;align-items:center;gap:6px;margin-bottom:7px}
+.t-tool{padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;color:#6b7280;border:1.5px solid #e0e3ef;background:transparent;transition:all .12s}
+.t-tool:hover{border-color:#2255e8;color:#2255e8;background:#eef2fd}
+.t-tool.active{border-color:#2255e8;color:#2255e8;background:#eef2fd}
+.thread-row{display:flex;gap:7px}
+.thread-fi{flex:1;padding:7px 10px;border:1.5px solid #e0e3ef;border-radius:8px;font-size:12px;outline:none;transition:border-color .12s}
+.thread-fi:focus{border-color:#2255e8}
+.sugg-hdr{padding:11px 13px;border-bottom:1px solid #e0e3ef;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.sugg-title{font-size:12px;font-weight:600;color:#1a1d2e}
+.sugg-badge{background:#eef2fd;color:#2255e8;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:600}
+.sugg-list{flex:1;overflow-y:auto;padding:10px 12px}
+.sugg-item{padding:9px 11px;border:1.5px solid #e0e3ef;border-radius:9px;margin-bottom:7px;cursor:pointer;transition:border-color .12s,background .12s}
+.sugg-item:hover{border-color:#2255e8;background:#f8f9ff}
+.sugg-text{font-size:12px;color:#374151;line-height:1.4;margin-bottom:7px}
+.sugg-foot{display:flex;align-items:center;gap:7px}
+.conf-label{font-size:10px;color:#9ca3af;white-space:nowrap}
+.conf-bar-wrap{flex:1;height:4px;background:#f0f2f7;border-radius:2px;overflow:hidden}
+.conf-bar{height:100%;border-radius:2px;background:#10b981}
+.conf-pct{font-size:10px;font-weight:600;color:#059669;min-width:28px;text-align:right}
+
+/* ─── Analytics ──────────────────────────────────────────────────────────────── */
+canvas.linechart{display:block;width:100%;height:160px}
+.stat-row{display:flex;gap:14px;flex-wrap:wrap}
+.stat-item{flex:1;min-width:140px;background:#fff;border:1px solid #e0e3ef;border-radius:10px;padding:13px}
+.stat-v{font-size:22px;font-weight:600;color:#1a1d2e;margin-bottom:2px}
+.stat-l{font-size:11px;color:#6b7280}
+.donut-wrap{position:relative;width:120px;height:120px;flex-shrink:0}
+canvas.donut{width:120px;height:120px}
+.donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.donut-pct{font-size:18px;font-weight:600;color:#1a1d2e}
+.donut-sub{font-size:10px;color:#6b7280}
+.legend-item{display:flex;align-items:center;gap:7px;margin-bottom:7px;font-size:12px;color:#374151}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* ─── Integrations ───────────────────────────────────────────────────────────── */
+.int-card{background:#fff;border:1.5px solid #e0e3ef;border-radius:12px;padding:16px;transition:border-color .15s}
+.int-card:hover{border-color:#c7d2fe}
+.int-logo{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:11px;border:1px solid #f0f2f7;background:#fafbfe}
+.int-name{font-size:13px;font-weight:600;color:#1a1d2e;margin-bottom:3px}
+.int-desc{font-size:11px;color:#6b7280;margin-bottom:11px;line-height:1.4}
+.int-foot{display:flex;align-items:center;justify-content:space-between}
+
+/* ─── Emulator ───────────────────────────────────────────────────────────────── */
+.emu-layout{display:grid;grid-template-columns:1fr 300px;gap:14px;height:calc(100vh - 52px - 40px)}
+.emu-chat{background:#fff;border:1px solid #e0e3ef;border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.emu-chat-hdr{padding:11px 13px;border-bottom:1px solid #e0e3ef;display:flex;align-items:center;gap:8px}
+.emu-chat-msgs{flex:1;overflow-y:auto;padding:13px;display:flex;flex-direction:column;gap:8px;background:#f8f9fc}
+.emu-input-row{padding:10px 12px;border-top:1px solid #e0e3ef;display:flex;gap:7px}
+.emu-fi{flex:1;padding:7px 10px;border:1.5px solid #e0e3ef;border-radius:8px;font-size:12px;outline:none;transition:border-color .12s}
+.emu-fi:focus{border-color:#2255e8}
+.emu-debug{background:#fff;border:1px solid #e0e3ef;border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.emu-debug-hdr{padding:11px 13px;border-bottom:1px solid #e0e3ef;display:flex;align-items:center;justify-content:space-between}
+.emu-debug-body{flex:1;overflow-y:auto;padding:12px}
+.debug-section{margin-bottom:14px}
+.debug-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;margin-bottom:7px}
+.debug-item{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0f2f7;font-size:11px}
+.debug-item:last-child{border-bottom:none}
+.debug-key{color:#6b7280}
+.debug-val{color:#1a1d2e;font-weight:500}
+.conf-mini{display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:6px}
+.conf-mini-bar{flex:1;height:5px;background:#f0f2f7;border-radius:3px;overflow:hidden}
+.conf-mini-fill{height:100%;border-radius:3px}
+.flow-path{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:4px}
+.path-node{padding:3px 8px;background:#eef2fd;color:#2255e8;border-radius:5px;font-size:10px;font-weight:500}
+.path-arrow{color:#d1d5db;font-size:11px}
+
+/* ─── Knowledge Base ─────────────────────────────────────────────────────────── */
+.kb-table{width:100%;border-collapse:collapse}
+.kb-table th{text-align:left;padding:9px 12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;border-bottom:1.5px solid #e0e3ef}
+.kb-table td{padding:11px 12px;border-bottom:1px solid #f0f2f7;font-size:12px;color:#374151;vertical-align:middle}
+.kb-table tr:last-child td{border-bottom:none}
+.kb-table tr:hover td{background:#fafbfe}
+.kb-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.progress-bar{height:5px;background:#f0f2f7;border-radius:3px;overflow:hidden;margin-top:3px}
+.progress-fill{height:100%;border-radius:3px;background:#2255e8}
+
+/* ─── Misc helpers ───────────────────────────────────────────────────────────── */
+.flex{display:flex}
+.flex-col{display:flex;flex-direction:column}
+.items-center{align-items:center}
+.justify-between{justify-content:space-between}
+.gap4{gap:4px}
+.gap6{gap:6px}
+.gap8{gap:8px}
+.gap10{gap:10px}
+.gap12{gap:12px}
+.gap14{gap:14px}
+.mb4{margin-bottom:4px}
+.mb8{margin-bottom:8px}
+.mb12{margin-bottom:12px}
+.mb14{margin-bottom:14px}
+.mb16{margin-bottom:16px}
+.mb20{margin-bottom:20px}
+.mt8{margin-top:8px}
+.mt10{margin-top:10px}
+.mt12{margin-top:12px}
+.text-muted{color:#6b7280}
+.text-subtle{color:#9ca3af}
+.text-xs{font-size:10px}
+.text-sm{font-size:11px}
+.fw500{font-weight:500}
+.fw600{font-weight:600}
+.w100{width:100%}
+.hr{height:1px;background:#f0f2f7;margin:12px 0;border:none}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#dde1eb;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#c5c9d8}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo">
+        <div class="sb-logo-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="white">
+            <rect x="2" y="5" width="12" height="8" rx="2.5"/>
+            <circle cx="5.5" cy="9" r="1.2"/>
+            <circle cx="10.5" cy="9" r="1.2"/>
+            <path d="M5.5 11.5c.8.8 2.7.8 3.5 0" stroke="white" stroke-width="1" stroke-linecap="round" fill="none"/>
+            <rect x="7" y="2" width="2" height="3" rx="1"/>
+            <circle cx="8" cy="2" r="1" fill="white"/>
+          </svg>
+        </div>
+        <span class="sb-logo-text">BotStudio</span>
+      </div>
+    </div>
+    <nav class="sb-nav" id="sidebar-nav"></nav>
+    <div class="sb-bots" id="sidebar-bots"></div>
+  </aside>
+  <div id="main">
+    <header id="topbar"></header>
+    <main id="content"></main>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+const S = {
+  screen: 'dashboard',
+  wizardActive: false,
+  wizardStep: 1,
+  wizardDone: [false, false, false, false],
+  wizardData: {
+    name: 'Aria', industry: 'SaaS', description: 'Customer success bot',
+    services: ['Billing', 'Technical support', 'Account management'],
+    timezone: 'UTC-5', hoursStart: '09:00', hoursEnd: '18:00',
+    email: 'alerts@company.com', webhook: ''
+  },
+  botSetupData: {
+    name: 'Support Bot', displayName: 'Aria', avatar: '🤖', lang: 'English',
+    tone: 'Friendly', maxTurns: '6',
+    topics: 'Politics, competitors, financial advice',
+    escalation: 'negative_sentiment, low_confidence',
+    prompt: 'You are a helpful customer support assistant. Always be polite and concise.',
+    channels: { web: true, api: true, slack: false, teams: false, whatsapp: false }
+  },
+  flowView: 'flow',
+  selectedNode: null,
+  flowNodes: [
+    { id: 1, type: 'start',     label: 'Start',         x: 50,  y: 190 },
+    { id: 2, type: 'message',   label: 'Welcome Msg',   x: 160, y: 180, sub: 'Greet the user' },
+    { id: 3, type: 'condition', label: 'Intent Check',  x: 370, y: 180, sub: 'Route by topic' },
+    { id: 4, type: 'message',   label: 'FAQ Reply',     x: 570, y: 100, sub: 'Auto-answer' },
+    { id: 5, type: 'action',    label: 'Route to Agent',x: 570, y: 270, sub: 'Live handoff' },
+    { id: 6, type: 'end',       label: 'End',           x: 780, y: 190 },
+  ],
+  flowConnections: [
+    { id: 1, from: 1, to: 2 },
+    { id: 2, from: 2, to: 3 },
+    { id: 3, from: 3, to: 4, label: 'FAQ', port: 'top' },
+    { id: 4, from: 3, to: 5, label: 'Human', port: 'bot' },
+    { id: 5, from: 4, to: 6 },
+    { id: 6, from: 5, to: 6 },
+  ],
+  selectedInbox: 0,
+  agentMode: true,
+  bots: [
+    { id: 1, name: 'Support Bot',      status: 'live'   },
+    { id: 2, name: 'Sales Assistant',  status: 'paused' },
+    { id: 3, name: 'Onboarding Guide', status: 'draft'  },
+  ],
+  emuMessages: [
+    { role: 'bot', text: 'Hi! I\'m Aria. How can I help you today?' }
+  ],
+  kbItems: [
+    { id:1, name:'Product FAQ',       type:'Text',  updated:'2 hours ago', words:1420, status:'trained',  pct:100 },
+    { id:2, name:'Pricing Page',      type:'URL',   updated:'1 day ago',   words:890,  status:'trained',  pct:100 },
+    { id:3, name:'Support Handbook',  type:'PDF',   updated:'3 days ago',  words:6200, status:'trained',  pct:100 },
+    { id:4, name:'Release Notes',     type:'URL',   updated:'5 days ago',  words:2100, status:'training', pct:64  },
+    { id:5, name:'API Documentation', type:'PDF',   updated:'1 week ago',  words:9800, status:'pending',  pct:0   },
+  ]
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ICONS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+const ICO = {
+  botSetup:    `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="4" y="6" width="7" height="6" rx="1.5"/><circle cx="7.5" cy="3.5" r="1.5"/><path d="M7.5 5v1"/><circle cx="6" cy="8.5" r=".8" fill="currentColor" stroke="none"/><circle cx="9" cy="8.5" r=".8" fill="currentColor" stroke="none"/><path d="M6 10.5c.8.7 2.2.7 3 0" stroke-linecap="round"/></svg>`,
+  flow:        `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="2.5" cy="7.5" r="1.8"/><circle cx="12.5" cy="3" r="1.8"/><circle cx="12.5" cy="12" r="1.8"/><path d="M4.3 7.5h3.5l2.9-4.3" stroke-linecap="round"/><path d="M7.8 7.5l2.9 4.3" stroke-linecap="round"/></svg>`,
+  emulator:    `<svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor"><rect x="1" y="2" width="13" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5 13h5M7.5 11v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><polygon points="5.5,5 10.5,7.5 5.5,10" fill="currentColor"/></svg>`,
+  kb:          `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 2h9v11H3z" rx="1"/><line x1="5.5" y1="5.5" x2="9.5" y2="5.5" stroke-linecap="round"/><line x1="5.5" y1="7.5" x2="9.5" y2="7.5" stroke-linecap="round"/><line x1="5.5" y1="9.5" x2="7.5" y2="9.5" stroke-linecap="round"/></svg>`,
+  assist:      `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 8V7a5 5 0 0 1 10 0v1"/><rect x="1.5" y="8" width="3" height="4" rx="1.5"/><rect x="10.5" y="8" width="3" height="4" rx="1.5"/><path d="M13.5 10v1.5A2 2 0 0 1 11.5 13.5H9" stroke-linecap="round"/><circle cx="9" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg>`,
+  dashboard:   `<svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor"><rect x="1.5" y="1.5" width="5" height="5" rx="1.5"/><rect x="8.5" y="1.5" width="5" height="5" rx="1.5"/><rect x="1.5" y="8.5" width="5" height="5" rx="1.5"/><rect x="8.5" y="8.5" width="5" height="5" rx="1.5"/></svg>`,
+  analytics:   `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><polyline points="1.5,12 4.5,8 7.5,10 12,4.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="1.5" y1="13.5" x2="13.5" y2="13.5" stroke-linecap="round"/></svg>`,
+  integrations:`<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 1.5h3v3h2.5v2.5h3v3h-3V7.5H8.5V10H6V7.5H3.5v-2.5H1.5V2H4.5V-.5" stroke-linejoin="round"/><rect x="1.5" y="1.5" width="4" height="4" rx="1"/><rect x="9.5" y="1.5" width="4" height="4" rx="1"/><rect x="1.5" y="9.5" width="4" height="4" rx="1"/><rect x="9.5" y="9.5" width="4" height="4" rx="1"/></svg>`,
+  plus:        `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="6" y1="1.5" x2="6" y2="10.5"/><line x1="1.5" y1="6" x2="10.5" y2="6"/></svg>`,
+  check:       `<svg width="9" height="7" viewBox="0 0 9 7" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,3.5 3.5,6 8,1"/></svg>`,
+  arrow_r:     `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 10,6"/><polyline points="6.5,2.5 10,6 6.5,9.5"/></svg>`,
+  lock:        `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="6" width="9" height="6.5" rx="1.5"/><path d="M4 6V4a2.5 2.5 0 0 1 5 0v2" stroke-linecap="round"/></svg>`,
+  refresh:     `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M11 2.5A5.5 5.5 0 1 0 12 7.5"/><polyline points="9,1 11,3 13,1"/></svg>`,
+  export:      `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1.5 9v2a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V9"/><polyline points="4,5.5 6.5,8 9,5.5"/><line x1="6.5" y1="1.5" x2="6.5" y2="8"/></svg>`,
+  send:        `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="1.5,1.5 11.5,6.5 1.5,11.5 3,6.5 1.5,1.5"/><line x1="3" y1="6.5" x2="11.5" y2="6.5"/></svg>`,
+  close:       `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>`,
+  more:        `<svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><circle cx="3" cy="7" r="1.3"/><circle cx="7" cy="7" r="1.3"/><circle cx="11" cy="7" r="1.3"/></svg>`,
+  undo:        `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2 5.5h5.5a3 3 0 0 1 0 6H5"/><polyline points="4.5,3 2,5.5 4.5,8"/></svg>`,
+  redo:        `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M11 5.5H5.5a3 3 0 0 0 0 6H8"/><polyline points="8.5,3 11,5.5 8.5,8"/></svg>`,
+  trash:       `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><polyline points="2,3.5 11,3.5"/><path d="M5 3.5V2h3v1.5M5.5 6v4M7.5 6v4M3 3.5l.7 7a.5.5 0 0 0 .5.5h5.6a.5.5 0 0 0 .5-.5l.7-7"/></svg>`,
+  search:      `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="3.5"/><line x1="8.5" y1="8.5" x2="11.5" y2="11.5"/></svg>`,
+  upload:      `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1.5 9v2a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V9"/><polyline points="4,5.5 6.5,3 9,5.5"/><line x1="6.5" y1="3" x2="6.5" y2="9.5"/></svg>`,
+  chevron_d:   `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,4.5 6,8.5 10,4.5"/></svg>`,
+  chevron_r:   `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="4.5,2 8.5,6 4.5,10"/></svg>`,
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   NODE DEFINITIONS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+const ND = {
+  start:     { w: 44,  h: 44,  color: '#10b981', icon: '▶',  kind: 'circle' },
+  end:       { w: 44,  h: 44,  color: '#ef4444', icon: '■',  kind: 'circle' },
+  message:   { w: 150, h: 54,  color: '#2255e8', icon: 'M',  kind: 'rect'   },
+  condition: { w: 150, h: 54,  color: '#f59e0b', icon: '?',  kind: 'rect'   },
+  action:    { w: 150, h: 54,  color: '#8b5cf6', icon: 'A',  kind: 'rect'   },
+  delay:     { w: 150, h: 54,  color: '#6b7280', icon: '⏱', kind: 'rect'   },
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════════════════════════════════════ */
+const NAV_GROUPS = [
+  { label: 'Build',   items: [
+    { id: 'bot-setup',  label: 'Bot setup',     icon: 'botSetup'    },
+    { id: 'flow',       label: 'Flow builder',  icon: 'flow'        },
+    { id: 'emulator',   label: 'Emulator',      icon: 'emulator'    },
+    { id: 'kb',         label: 'Knowledge base',icon: 'kb'          },
+  ]},
+  { label: 'Operate', items: [
+    { id: 'assist',     label: 'Agent assist',  icon: 'assist'      },
+    { id: 'dashboard',  label: 'Dashboard',     icon: 'dashboard'   },
+  ]},
+  { label: 'Measure', items: [
+    { id: 'analytics',  label: 'Analytics',     icon: 'analytics'   },
+    { id: 'integrations',label:'Integrations',  icon: 'integrations'},
+  ]},
+];
+
+function navigate(screen) {
+  if (S.wizardActive && screen !== 'wizard') return;
+  S.screen = screen;
+  render();
+}
+
+function openWizard() {
+  S.wizardActive = true;
+  S.wizardStep = 1;
+  S.wizardDone = [false, false, false, false];
+  S.screen = 'wizard';
+  render();
+}
+
+function closeWizard() {
+  S.wizardActive = false;
+  S.screen = 'bot-setup';
+  render();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   RENDER
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function render() {
+  renderSidebar();
+  renderTopbar();
+  renderContent();
+}
+
+function renderSidebar() {
+  const nav = document.getElementById('sidebar-nav');
+  nav.innerHTML = NAV_GROUPS.map(g => `
+    <div class="sb-group-lbl">${g.label}</div>
+    ${g.items.map(item => {
+      const muted = S.wizardActive ? 'muted' : '';
+      const active = S.screen === item.id ? 'active' : '';
+      return `<div class="sb-item ${active} ${muted}" onclick="navigate('${item.id}')">
+        ${ICO[item.icon]} <span>${item.label}</span>
+      </div>`;
+    }).join('')}
+  `).join('');
+
+  const botsEl = document.getElementById('sidebar-bots');
+  botsEl.innerHTML = `
+    <div class="sb-bots-hdr">
+      <span class="sb-bots-lbl">Bots</span>
+      <button class="new-bot-btn" onclick="${S.wizardActive ? 'closeWizard()' : 'openWizard()'}">
+        ${S.wizardActive ? ICO.close + ' Cancel' : ICO.plus + ' New bot'}
+      </button>
+    </div>
+    ${S.bots.map(b => `
+      <div class="bot-row" onclick="navigate('bot-setup')">
+        <span class="bot-dot ${b.status}"></span>
+        <span class="bot-name">${b.name}</span>
+        <span class="bot-badge ${b.status}">${b.status}</span>
+      </div>
+    `).join('')}
+  `;
+}
+
+function renderTopbar() {
+  const tb = document.getElementById('topbar');
+  const map = {
+    dashboard:    topbarDashboard,
+    'bot-setup':  topbarBotSetup,
+    flow:         topbarFlow,
+    assist:       topbarAssist,
+    analytics:    topbarAnalytics,
+    integrations: topbarIntegrations,
+    emulator:     topbarEmulator,
+    kb:           topbarKB,
+    wizard:       topbarWizard,
+  };
+  tb.innerHTML = (map[S.screen] || (() => `<span class="tb-title">${S.screen}</span>`))();
+}
+
+function renderContent() {
+  const c = document.getElementById('content');
+  const map = {
+    dashboard:    screenDashboard,
+    'bot-setup':  screenBotSetup,
+    flow:         screenFlow,
+    assist:       screenAssist,
+    analytics:    screenAnalytics,
+    integrations: screenIntegrations,
+    emulator:     screenEmulator,
+    kb:           screenKB,
+    wizard:       screenWizard,
+  };
+  c.innerHTML = (map[S.screen] || (() => `<p class="text-muted">Coming soon.</p>`))();
+  afterRender();
+}
+
+function afterRender() {
+  if (S.screen === 'dashboard') {
+    requestAnimationFrame(() => {
+      drawSparkline('spark-conv', [44,51,48,62,58,70,74,68,80,76,85,90], '#2255e8');
+      drawSparkline('spark-res',  [72,74,71,78,76,80,82,79,85,83,88,87], '#10b981');
+      drawSparkline('spark-rt',   [2.4,2.1,2.6,2.2,1.9,2.0,1.8,1.7,1.6,1.5,1.4,1.3], '#f59e0b');
+      drawSparkline('spark-act',  [8,12,9,15,11,14,18,16,20,17,22,19], '#8b5cf6');
+      drawBarChart('intent-chart',
+        ['Password Reset','Billing','Feature Q','Bug Report','Upgrade','Other'],
+        [38, 29, 22, 18, 14, 11], '#2255e8');
+    });
+  }
+  if (S.screen === 'analytics') {
+    requestAnimationFrame(() => {
+      drawLineChart('analytics-line',
+        [120,145,132,168,155,180,192,178,205,198,220,215],
+        ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']);
+      drawDonut('analytics-donut', [45, 30, 15, 10], ['#2255e8','#10b981','#f59e0b','#8b5cf6']);
+    });
+  }
+  if (S.screen === 'flow') {
+    initFlowDrag();
+    drawConnections();
+  }
+  if (S.screen === 'wizard') {
+    wizardBindInputs();
+    wizardUpdatePreview();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TOPBAR RENDERERS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function topbarDashboard() {
+  return `
+    <span class="tb-title">Dashboard</span>
+    <span class="tb-divider"></span>
+    <span class="text-muted text-sm">Last 7 days</span>
+    <span class="tb-sub">${ICO.chevron_d}</span>
+    <div class="tb-actions">
+      <button class="btn btn-ghost btn-sm">${ICO.export} Export</button>
+      <button class="btn btn-ghost btn-sm">${ICO.refresh} Refresh</button>
+    </div>`;
+}
+
+function topbarWizard() {
+  const steps = ['Business', 'Services', 'Hours', 'Notifications'];
+  const pills = steps.map((s, i) => {
+    const st = i < S.wizardStep - 1 ? 'done' : i === S.wizardStep - 1 ? 'active' : 'pending';
+    return `${i > 0 ? '<span class="step-arrow">›</span>' : ''}
+      <button class="step-pill ${st}" onclick="wizardGoStep(${i+1})">${st === 'done' ? '✓ ' : ''}${i+1}. ${s}</button>`;
+  }).join('');
+  return `
+    <button class="btn btn-ghost btn-sm" onclick="closeWizard()">${ICO.close} Cancel</button>
+    <span class="tb-divider"></span>
+    <span class="tb-title">New Bot</span>
+    <span class="tb-divider"></span>
+    <div class="step-pills">${pills}</div>
+    <div class="tb-actions">
+      <button class="btn btn-ghost btn-sm">Save draft</button>
+    </div>`;
+}
+
+function topbarBotSetup() {
+  return `
+    <span class="tb-title">Bot Setup</span>
+    <span class="tb-divider"></span>
+    <select class="fi-inline fs" style="width:160px">
+      ${S.bots.map(b => `<option>${b.name}</option>`).join('')}
+    </select>
+    <div class="tb-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openWizard()">${ICO.plus} New bot</button>
+      <button class="btn btn-secondary btn-sm">Save changes</button>
+      <button class="btn btn-primary btn-sm">${ICO.arrow_r} Deploy</button>
+    </div>`;
+}
+
+function topbarFlow() {
+  return `
+    <div class="tb-tabs">
+      <button class="tb-tab ${S.flowView === 'flow' ? 'active' : ''}" onclick="setFlowView('flow')">Flow</button>
+      <button class="tb-tab ${S.flowView === 'journey' ? 'active' : ''}" onclick="setFlowView('journey')">Journey</button>
+    </div>
+    <span class="tb-divider"></span>
+    <select class="fi-inline fs" style="width:150px">
+      ${S.bots.map(b => `<option>${b.name}</option>`).join('')}
+    </select>
+    <div class="tb-actions">
+      <button class="btn btn-ghost btn-sm">${ICO.undo}</button>
+      <button class="btn btn-ghost btn-sm">${ICO.redo}</button>
+      <span class="tb-divider"></span>
+      <span class="text-muted text-sm">100%</span>
+      <span class="tb-divider"></span>
+      <button class="btn btn-secondary btn-sm">Test flow</button>
+      <button class="btn btn-primary btn-sm">Publish</button>
+    </div>`;
+}
+
+function topbarAssist() {
+  const live = 3;
+  return `
+    <span class="tb-title">Agent Assist</span>
+    <span class="tb-divider"></span>
+    <select class="fi-inline fs">
+      <option>All bots</option>
+      ${S.bots.map(b => `<option>${b.name}</option>`).join('')}
+    </select>
+    <select class="fi-inline fs" style="margin-left:6px">
+      <option>Open</option><option>Pending</option><option>Resolved</option><option>All</option>
+    </select>
+    <div class="tb-actions">
+      <span class="badge badge-green">${ICO.plus.replace('12','10').replace('12','10')} ${live} Live</span>
+      <button class="btn btn-ghost btn-sm">${S.agentMode ? '<span class="dot dot-green"></span>' : '<span class="dot dot-gray"></span>'} Online</button>
+    </div>`;
+}
+
+function topbarAnalytics() {
+  return `
+    <span class="tb-title">Analytics</span>
+    <span class="tb-divider"></span>
+    <span class="text-muted text-sm">Last 30 days</span>
+    ${ICO.chevron_d}
+    <div class="tb-actions">
+      <button class="btn btn-ghost btn-sm">${ICO.export} Export PDF</button>
+      <button class="btn btn-secondary btn-sm">Schedule report</button>
+    </div>`;
+}
+
+function topbarIntegrations() {
+  return `
+    <span class="tb-title">Integrations</span>
+    <span class="tb-divider"></span>
+    <input class="fi-inline fi" style="width:220px" placeholder="${ICO.search} Search integrations…">
+    <div class="tb-actions">
+      <button class="btn btn-primary btn-sm">Browse marketplace</button>
+    </div>`;
+}
+
+function topbarEmulator() {
+  return `
+    <span class="tb-title">Emulator</span>
+    <span class="tb-divider"></span>
+    <select class="fi-inline fs" style="width:160px">
+      ${S.bots.map(b => `<option>${b.name}</option>`).join('')}
+    </select>
+    <div class="tb-actions">
+      <button class="btn btn-ghost btn-sm" onclick="resetEmu()">Reset conversation</button>
+      <button class="btn btn-ghost btn-sm">View debug log</button>
+    </div>`;
+}
+
+function topbarKB() {
+  return `
+    <span class="tb-title">Knowledge Base</span>
+    <span class="tb-divider"></span>
+    <input class="fi-inline fi" style="width:220px" placeholder="Search sources…">
+    <div class="tb-actions">
+      <button class="btn btn-secondary btn-sm">${ICO.upload} Add source</button>
+      <button class="btn btn-primary btn-sm">Train model</button>
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SCREEN: DASHBOARD
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function screenDashboard() {
+  return `
+  <div class="g4 mb14">
+    ${metricCard('spark-conv','2,841','Conversations','↑ 18%','up')}
+    ${metricCard('spark-res', '87.4%','Resolution rate','↑ 4.1%','up')}
+    ${metricCard('spark-rt',  '1.3s', 'Avg response time','↓ 0.8s','up')}
+    ${metricCard('spark-act', '19',   'Active sessions','↑ 6','up')}
+  </div>
+  <div class="g2 mb14">
+    <div>
+      <div class="card mb14">
+        <p class="section-hdr">Agent Status</p>
+        ${[
+          ['Alice M.',   'Online', 47, 3,  '4.8'],
+          ['Ben K.',     'Busy',   31, 7,  '4.6'],
+          ['Clara R.',   'Busy',   28, 4,  '4.9'],
+          ['David W.',   'Online', 55, 1,  '4.7'],
+          ['Elena S.',   'Offline',28, 0,  '4.5'],
+        ].map(([n,st,h,q,r]) => `
+          <div class="agent-row">
+            <span class="dot ${st==='Online'?'dot-green':st==='Busy'?'dot-amber':'dot-gray'}"></span>
+            <span class="agent-name">${n}</span>
+            <span class="agent-stat text-subtle">${st}</span>
+            <span class="agent-stat">${h} handled</span>
+            <span class="agent-stat">${q} queue</span>
+            <span class="agent-stat" style="color:#f59e0b">★ ${r}</span>
+          </div>`).join('')}
+      </div>
+      <div class="card">
+        <p class="section-hdr">Top Intents</p>
+        <canvas class="barchart" id="intent-chart"></canvas>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="height:100%">
+        <p class="section-hdr">Activity Log</p>
+        ${[
+          ['#eef2fd','#2255e8','ℹ','New conversation started by <strong>Sarah M.</strong>','Just now'],
+          ['#d1fae5','#065f46','✓','Bot resolved billing query — Resolution: <strong>Auto</strong>','2m ago'],
+          ['#fef3c7','#92400e','!','Agent <strong>Ben K.</strong> missed response SLA','5m ago'],
+          ['#ede9fe','#5b21b6','⬡','Flow published: <strong>Support Bot v2.1</strong>','12m ago'],
+          ['#d1fae5','#065f46','✓','<strong>Clara R.</strong> joined the queue','18m ago'],
+          ['#fee2e2','#991b1b','✕','3 conversations escalated — Low confidence','22m ago'],
+          ['#eef2fd','#2255e8','ℹ','Knowledge base retrained with <strong>42 new docs</strong>','34m ago'],
+          ['#d1fae5','#065f46','✓','Integration <strong>Salesforce</strong> sync completed','41m ago'],
+          ['#fef3c7','#92400e','!','High intent mismatch rate on "Refund" — review needed','58m ago'],
+        ].map(([bg,c,ico,txt,t]) => `
+          <div class="activity-item">
+            <div class="activity-icon" style="background:${bg};color:${c}">${ico}</div>
+            <span class="activity-text">${txt}</span>
+            <span class="activity-time">${t}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function metricCard(id, val, lbl, delta, dir) {
+  return `
+    <div class="card">
+      <div class="metric-val">${val}</div>
+      <div class="metric-lbl">${lbl}</div>
+      <span class="metric-delta ${dir === 'up' ? 'delta-up' : 'delta-dn'}">${delta}</span>
+      <div class="sparkline-wrap"><canvas class="sparkline" id="${id}"></canvas></div>
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SCREEN: WIZARD
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function screenWizard() {
+  return `<div class="wiz-wrap">
+    <!-- Preview -->
+    <div class="wiz-preview">
+      <div class="wiz-prev-hdr">
+        <div class="wiz-prev-avatar" id="wiz-avatar">🤖</div>
+        <div class="wiz-prev-meta">
+          <div class="wiz-prev-name" id="wiz-prev-name">${S.wizardData.name || 'Your Bot'}</div>
+          <div class="wiz-prev-status">● Online</div>
+        </div>
+      </div>
+      <div class="wiz-chat-area" id="wiz-chat"></div>
+      <div class="wiz-chat-input">
+        <input class="wiz-chat-fi" placeholder="Type a message…">
+        <button class="btn btn-primary btn-sm">${ICO.send}</button>
+      </div>
+    </div>
+
+    <!-- Steps -->
+    <div class="wiz-steps-col">
+      ${wizardStepHtml(1,'Business','Company & bot identity',`
+        <div class="fg"><label class="fl">Bot name</label><input class="fi" id="wiz-name" value="${S.wizardData.name}" placeholder="e.g. Aria"></div>
+        <div class="fg"><label class="fl">Industry</label><select class="fs" id="wiz-industry">
+          ${['SaaS','E-commerce','Healthcare','Finance','Retail','Other'].map(o => `<option ${S.wizardData.industry===o?'selected':''}>${o}</option>`).join('')}
+        </select></div>
+        <div class="fg"><label class="fl">Short description</label><textarea class="fta" id="wiz-desc" rows="2" placeholder="What does this bot help with?">${S.wizardData.description}</textarea></div>
+        <div class="wiz-step-foot"><button class="btn btn-primary btn-sm" onclick="wizardNext()">Next ${ICO.arrow_r}</button></div>
+      `)}
+      ${wizardStepHtml(2,'Services','What the bot handles',`
+        <p class="text-muted text-sm mb8">Check all that apply to your bot's scope.</p>
+        ${['Billing & payments','Technical support','Account management','Product questions','Order tracking','Onboarding','Refunds & returns','Scheduling'].map(s => `
+          <label style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:#374151;cursor:pointer">
+            <input type="checkbox" ${S.wizardData.services.includes(s)?'checked':''} onchange="wizardToggleService('${s}')">
+            ${s}
+          </label>`).join('')}
+        <div class="wiz-step-foot"><button class="btn btn-primary btn-sm" onclick="wizardNext()">Next ${ICO.arrow_r}</button></div>
+      `)}
+      ${wizardStepHtml(3,'Hours','Operating schedule',`
+        <div class="fg"><label class="fl">Timezone</label><select class="fs" id="wiz-tz">
+          ${['UTC-8','UTC-7','UTC-6','UTC-5','UTC-4','UTC-3','UTC+0','UTC+1','UTC+2'].map(t => `<option ${S.wizardData.timezone===t?'selected':''}>${t}</option>`).join('')}
+        </select></div>
+        <div class="fi-row fg">
+          <div style="flex:1"><label class="fl">Opens</label><input type="time" class="fi" id="wiz-start" value="${S.wizardData.hoursStart}"></div>
+          <div style="flex:1"><label class="fl">Closes</label><input type="time" class="fi" id="wiz-end" value="${S.wizardData.hoursEnd}"></div>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#374151;cursor:pointer">
+          <input type="checkbox" checked> Send auto-reply outside hours
+        </label>
+        <div class="wiz-step-foot"><button class="btn btn-primary btn-sm" onclick="wizardNext()">Next ${ICO.arrow_r}</button></div>
+      `)}
+      ${wizardStepHtml(4,'Notifications','Alerts & webhooks',`
+        <div class="fg"><label class="fl">Alert email</label><input type="email" class="fi" id="wiz-email" value="${S.wizardData.email}" placeholder="alerts@company.com"></div>
+        <div class="fg"><label class="fl">Webhook URL (optional)</label><input class="fi" id="wiz-webhook" value="${S.wizardData.webhook}" placeholder="https://…"></div>
+        <div class="fg">
+          <label class="fl" style="margin-bottom:7px">Notify on</label>
+          ${['Escalation','Low confidence','SLA breach','New conversation'].map(s => `
+            <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;color:#374151;cursor:pointer">
+              <input type="checkbox" checked> ${s}
+            </label>`).join('')}
+        </div>
+        <div class="wiz-step-foot">
+          <button class="btn btn-green btn-sm" onclick="wizardFinish()">Complete setup ${ICO.check}</button>
+        </div>
+      `)}
+    </div>
+
+    <!-- Checklist + go-live -->
+    <div class="wiz-right-col">
+      <div class="card">
+        <p class="checklist-title">Setup checklist</p>
+        ${[
+          ['Business details', 0],
+          ['Services defined', 1],
+          ['Hours configured', 2],
+          ['Notifications set', 3],
+          ['Test conversation', -1],
+          ['Review prompt', -1],
+        ].map(([lbl,step]) => {
+          const done = step >= 0 ? S.wizardDone[step] : false;
+          return `<div class="check-item">
+            <div class="check-ico ${done?'done'}">${done ? ICO.check : ''}</div>
+            <span style="${done ? 'color:#6b7280;text-decoration:line-through' : ''}">${lbl}</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="golive-card ${S.wizardDone.every(Boolean) ? 'unlocked' : ''}">
+        <div style="font-size:18px;margin-bottom:6px">${S.wizardDone.every(Boolean) ? '🚀' : ICO.lock}</div>
+        <p class="golive-title">Go live</p>
+        <p class="golive-sub">${S.wizardDone.every(Boolean) ? 'Your bot is ready to deploy.' : 'Complete all steps to unlock deployment.'}</p>
+        <button class="btn btn-primary w100 ${S.wizardDone.every(Boolean) ? '' : ''}" style="${S.wizardDone.every(Boolean) ? '' : 'opacity:.4;cursor:not-allowed'}">
+          Deploy bot ${ICO.arrow_r}
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function wizardStepHtml(num, title, desc, body) {
+  const isActive = S.wizardStep === num;
+  const isDone   = S.wizardDone[num - 1];
+  const stNum    = isDone ? 'done' : isActive ? 'active' : 'pending';
+  return `
+    <div class="wiz-step ${isActive ? 'active-step' : ''}">
+      <div class="wiz-step-hdr" onclick="wizardGoStep(${num})">
+        <div class="wiz-step-num ${stNum}">${isDone ? ICO.check.replace('9 7','8 6') : num}</div>
+        <span class="wiz-step-title">${title}</span>
+        <span class="wiz-step-desc">${desc}</span>
+        ${ICO.chevron_d}
+      </div>
+      <div class="wiz-step-body ${isActive ? '' : 'closed'}">${body}</div>
+    </div>`;
+}
+
+function wizardGoStep(n) {
+  S.wizardStep = n;
+  S.screen = 'wizard';
+  render();
+}
+
+function wizardNext() {
+  S.wizardDone[S.wizardStep - 1] = true;
+  if (S.wizardStep < 4) S.wizardStep++;
+  render();
+}
+
+function wizardFinish() {
+  S.wizardDone[3] = true;
+  render();
+}
+
+function wizardToggleService(s) {
+  const idx = S.wizardData.services.indexOf(s);
+  if (idx >= 0) S.wizardData.services.splice(idx, 1);
+  else S.wizardData.services.push(s);
+  wizardUpdatePreview();
+}
+
+function wizardBindInputs() {
+  const bind = (id, key) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => { S.wizardData[key] = el.value; wizardUpdatePreview(); });
+  };
+  bind('wiz-name', 'name');
+  bind('wiz-desc', 'description');
+  bind('wiz-email', 'email');
+  bind('wiz-webhook', 'webhook');
+}
+
+function wizardUpdatePreview() {
+  const nameEl = document.getElementById('wiz-prev-name');
+  if (nameEl) nameEl.textContent = S.wizardData.name || 'Your Bot';
+  const chat = document.getElementById('wiz-chat');
+  if (!chat) return;
+  const name = S.wizardData.name || 'Your Bot';
+  const servs = S.wizardData.services;
+  chat.innerHTML = `
+    ${chatBubble('bot', `Hi! I'm <strong>${name}</strong>. How can I help you today?`)}
+    ${chatBubble('user', 'What services do you cover?')}
+    ${chatBubble('bot', servs.length > 0
+      ? `I can help with: <strong>${servs.slice(0,3).join(', ')}${servs.length > 3 ? '…' : ''}</strong>`
+      : 'I\'m still being configured. Check back soon!')}
+    ${S.wizardDone[0] ? chatBubble('bot', `I operate ${S.wizardData.hoursStart}–${S.wizardData.hoursEnd} (${S.wizardData.timezone}).`) : ''}
+  `;
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function chatBubble(role, text) {
+  const isBot = role === 'bot';
+  return `<div class="msg ${role}">
+    ${isBot ? `<div class="msg-avatar" style="background:#eef2fd;color:#2255e8">🤖</div>` : ''}
+    <div class="msg-bubble">${text}</div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SCREEN: BOT SETUP
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function screenBotSetup() {
+  return `
+  <div class="g2">
+    <!-- Identity -->
+    <div class="card">
+      <p class="card-title">Identity</p>
+      <p class="card-sub">Name, persona, and language settings</p>
+      <div class="fg"><label class="fl">Bot name (internal)</label><input class="fi" id="bs-name" value="${S.botSetupData.name}" oninput="bsUpdate('name',this.value)"></div>
+      <div class="fg"><label class="fl">Display name</label><input class="fi" id="bs-displayname" value="${S.botSetupData.displayName}" oninput="bsUpdate('displayName',this.value)"></div>
+      <div class="fg">
+        <label class="fl">Avatar</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${['🤖','🧠','💬','🌟','🎯','⚡','🔮','🤝'].map(e => `
+            <button onclick="bsUpdate('avatar','${e}')" style="width:32px;height:32px;border-radius:8px;border:1.5px solid ${S.botSetupData.avatar===e?'#2255e8':'#e0e3ef'};background:${S.botSetupData.avatar===e?'#eef2fd':'#fff'};cursor:pointer;font-size:16px">${e}</button>
+          `).join('')}
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Language</label>
+        <select class="fs" onchange="bsUpdate('lang',this.value)">
+          ${['English','Spanish','French','German','Portuguese','Japanese'].map(l => `<option ${S.botSetupData.lang===l?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Tone & persona</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px">
+          ${['Friendly','Professional','Concise','Empathetic','Assertive'].map(t => `
+            <button class="tone-btn ${S.botSetupData.tone===t?'active':''}" onclick="bsUpdate('tone','${t}')">${t}</button>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- Guardrails -->
+    <div class="card">
+      <p class="card-title">Guardrails</p>
+      <p class="card-sub">Boundaries, escalation, and safety rules</p>
+      <div class="fg"><label class="fl">Topics to avoid</label><textarea class="fta" rows="2" oninput="bsUpdate('topics',this.value)">${S.botSetupData.topics}</textarea></div>
+      <div class="fg"><label class="fl">Escalation triggers</label><textarea class="fta" rows="2" oninput="bsUpdate('escalation',this.value)">${S.botSetupData.escalation}</textarea></div>
+      <div class="fg">
+        <label class="fl">Max turns before escalation</label>
+        <input type="number" class="fi" style="width:80px" value="${S.botSetupData.maxTurns}" min="1" max="20" oninput="bsUpdate('maxTurns',this.value)">
+      </div>
+      <div class="fg"><label class="fl">Out-of-scope fallback message</label>
+        <textarea class="fta" rows="2">I'm not sure I can help with that. Let me connect you with a human agent.</textarea>
+      </div>
+    </div>
+
+    <!-- System Prompt -->
+    <div class="card">
+      <p class="card-title">System prompt</p>
+      <p class="card-sub">Base instructions injected at every conversation start</p>
+      <textarea class="fta" rows="5" oninput="bsUpdate('prompt',this.value)">${S.botSetupData.prompt}</textarea>
+      <div class="flex items-center justify-between mt8">
+        <span class="text-subtle text-xs">${S.botSetupData.prompt.length} chars</span>
+        <button class="btn btn-ghost btn-xs">Insert variable</button>
+      </div>
+    </div>
+
+    <!-- Channels -->
+    <div class="card">
+      <p class="card-title">Channels</p>
+      <p class="card-sub">Where this bot is deployed</p>
+      ${[
+        ['🌐','Web Widget','Embedded chat on your site','web'],
+        ['🔌','REST API','Direct API integration','api'],
+        ['💜','Slack','Workspace bot via Slack App','slack'],
+        ['🔷','Teams','Microsoft Teams integration','teams'],
+        ['📱','WhatsApp','WhatsApp Business API','whatsapp'],
+      ].map(([ico,n,d,k]) => `
+        <div class="channel-row">
+          <div class="channel-info">
+            <div class="channel-icon" style="background:#f4f5f9">${ico}</div>
+            <div><div class="channel-name">${n}</div><div class="channel-sub">${d}</div></div>
+          </div>
+          <label class="toggle"><input type="checkbox" ${S.botSetupData.channels[k]?'checked':''} onchange="bsToggleChannel('${k}',this.checked)"><span class="toggle-slider"></span></label>
+        </div>`).join('')}
+    </div>
+
+    <!-- Generated Prompt (full width) -->
+    <div class="card span2">
+      <div class="flex items-center justify-between mb8">
+        <div>
+          <p class="card-title">Generated system prompt</p>
+          <p class="card-sub">Auto-assembled from your settings — read-only</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="copyPrompt()">Copy</button>
+      </div>
+      <textarea class="prompt-preview" id="gen-prompt" readonly>${buildGeneratedPrompt()}</textarea>
+    </div>
+  </div>`;
+}
+
+function bsUpdate(key, val) {
+  S.botSetupData[key] = val;
+  const gp = document.getElementById('gen-prompt');
+  if (gp) gp.value = buildGeneratedPrompt();
+  // Refresh tone buttons and avatar without full re-render
+  if (key === 'tone') {
+    document.querySelectorAll('.tone-btn').forEach(b => {
+      b.classList.toggle('active', b.textContent === val);
+    });
+  }
+  if (key === 'avatar') {
+    document.querySelectorAll('[onclick*="bsUpdate(\'avatar\'"]').forEach(b => {
+      const isThis = b.textContent.trim() === val;
+      b.style.border = `1.5px solid ${isThis ? '#2255e8' : '#e0e3ef'}`;
+      b.style.background = isThis ? '#eef2fd' : '#fff';
+    });
+  }
+}
+
+function bsToggleChannel(k, v) {
+  S.botSetupData.channels[k] = v;
+  const gp = document.getElementById('gen-prompt');
+  if (gp) gp.value = buildGeneratedPrompt();
+}
+
+function buildGeneratedPrompt() {
+  const d = S.botSetupData;
+  const chs = Object.entries(d.channels).filter(([,v]) => v).map(([k]) => k).join(', ');
+  return `You are ${d.displayName || d.name}, a ${d.tone.toLowerCase()} AI assistant for ${d.lang}-speaking users.
+
+IDENTITY
+- Name: ${d.displayName || d.name}
+- Persona: ${d.tone}
+- Language: ${d.lang}
+
+INSTRUCTIONS
+${d.prompt}
+
+GUARDRAILS
+- Never discuss: ${d.topics}
+- Escalate when: ${d.escalation}
+- Maximum turns before human handoff: ${d.maxTurns}
+- If out of scope: "I'm not sure I can help with that. Let me connect you with a human agent."
+
+DEPLOYMENT
+- Active channels: ${chs || 'none'}
+
+Always be helpful, accurate, and stay within your defined scope.`;
+}
+
+function copyPrompt() {
+  const gp = document.getElementById('gen-prompt');
+  if (gp) navigator.clipboard?.writeText(gp.value);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SCREEN: FLOW BUILDER
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function screenFlow() {
+  if (S.flowView === 'journey') return screenJourney();
+  const inspector = S.selectedNode ? flowInspector() : `
+    <div class="inspector-empty">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#d1d5db" stroke-width="1.5"><rect x="6" y="10" width="20" height="14" rx="3"/><circle cx="12" cy="17" r="2"/><circle cx="20" cy="17" r="2"/><path d="M12 21c2 1.5 6 1.5 8 0"/></svg>
+      <span>Select a node to inspect</span>
+    </div>`;
+  return `
+  <div class="flow-layout" style="margin:-20px">
+    <!-- Palette -->
+    <div class="flow-palette">
+      <p class="palette-section">Trigger</p>
+      <div class="pal-item" onclick="addFlowNode('start')"><span class="pal-dot" style="background:#10b981"></span>Start</div>
+      <p class="palette-section">Messaging</p>
+      <div class="pal-item" onclick="addFlowNode('message')"><span class="pal-dot" style="background:#2255e8"></span>Message</div>
+      <p class="palette-section">Logic</p>
+      <div class="pal-item" onclick="addFlowNode('condition')"><span class="pal-dot" style="background:#f59e0b"></span>Condition</div>
+      <p class="palette-section">Actions</p>
+      <div class="pal-item" onclick="addFlowNode('action')"><span class="pal-dot" style="background:#8b5cf6"></span>Action</div>
+      <div class="pal-item" onclick="addFlowNode('delay')"><span class="pal-dot" style="background:#6b7280"></span>Delay</div>
+      <p class="palette-section">Terminal</p>
+      <div class="pal-item" onclick="addFlowNode('end')"><span class="pal-dot" style="background:#ef4444"></span>End</div>
+      <div class="hr"></div>
+      <p class="palette-section">My nodes</p>
+      <div class="pal-item" style="opacity:.45;cursor:not-allowed">Custom node +</div>
+    </div>
+
+    <!-- Canvas -->
+    <div class="flow-canvas-wrap" id="flow-canvas" onclick="deselectNode()">
+      ${S.flowNodes.map(n => flowNodeHtml(n)).join('')}
+      <svg class="flow-svg" id="flow-svg"></svg>
+    </div>
+
+    <!-- Inspector -->
+    <div class="flow-inspector">${inspector}</div>
+  </div>`;
+}
+
+function flowNodeHtml(n) {
+  const def = ND[n.type];
+  const sel = S.selectedNode === n.id;
+  if (def.kind === 'circle') {
+    const cls = n.type === 'start' ? 'fn-start-circle' : 'fn-end-circle';
+    return `<div class="flow-node" id="node-${n.id}" style="left:${n.x}px;top:${n.y}px"
+      onmousedown="nodeMouseDown(event,${n.id})" onclick="event.stopPropagation();selectNode(${n.id})">
+      <div class="${cls} ${sel?'selected':''}" title="${n.label}" style="font-size:16px;color:white">${def.icon}</div>
+      <div style="text-align:center;font-size:10px;color:#6b7280;margin-top:4px">${n.label}</div>
+    </div>`;
+  }
+  return `<div class="flow-node" id="node-${n.id}" style="left:${n.x}px;top:${n.y}px"
+    onmousedown="nodeMouseDown(event,${n.id})" onclick="event.stopPropagation();selectNode(${n.id})">
+    <div class="fn-body ${sel?'selected':''}">
+      <div class="fn-icon" style="background:${def.color}">${def.icon}</div>
+      <div>
+        <div class="fn-label">${n.label}</div>
+        ${n.sub ? `<div class="fn-sub">${n.sub}</div>` : ''}
+      </div>
+      <div class="fn-port in" title="Input"></div>
+      <div class="fn-port out" title="Output"></div>
+    </div>
+  </div>`;
+}
+
+function flowInspector() {
+  const n = S.flowNodes.find(x => x.id === S.selectedNode);
+  if (!n) return '';
+  const def = ND[n.type];
+  const conns = S.flowConnections.filter(c => c.from === n.id || c.to === n.id);
+  return `
+    <div class="ins-section">
+      <div class="flex items-center gap8 mb12">
+        <div class="fn-icon" style="background:${def.color};width:26px;height:26px;border-radius:7px">${def.icon}</div>
+        <div>
+          <div style="font-size:13px;font-weight:600">${n.label}</div>
+          <div class="text-subtle text-xs">${n.type} node · #${n.id}</div>
+        </div>
+        <button class="btn btn-ghost btn-xs" style="margin-left:auto" onclick="deleteNode(${n.id})">${ICO.trash}</button>
+      </div>
+      <div class="fg"><label class="fl">Label</label><input class="fi" value="${n.label}" oninput="updateNodeLabel(${n.id},this.value)"></div>
+      ${n.sub !== undefined ? `<div class="fg"><label class="fl">Description</label><input class="fi" value="${n.sub||''}" oninput="updateNodeSub(${n.id},this.value)"></div>` : ''}
+      ${n.type === 'message' ? `<div class="fg"><label class="fl">Message text</label><textarea class="fta" rows="3" placeholder="Enter bot message…"></textarea></div>` : ''}
+      ${n.type === 'condition' ? `<div class="fg"><label class="fl">Condition</label><input class="fi" placeholder="e.g. intent == 'billing'"></div><div class="fg"><label class="fl">True branch label</label><input class="fi" value="Yes"></div><div class="fg"><label class="fl">False branch label</label><input class="fi" value="No"></div>` : ''}
+      ${n.type === 'action' ? `<div class="fg"><label class="fl">Action type</label><select class="fs"><option>Assign to agent</option><option>Send email</option><option>Webhook call</option><option>Set variable</option></select></div>` : ''}
+      ${n.type === 'delay' ? `<div class="fg"><label class="fl">Delay (seconds)</label><input type="number" class="fi" value="3" min="1"></div>` : ''}
+    </div>
+    <div class="ins-section">
+      <p class="ins-hdr">Connections (${conns.length})</p>
+      ${conns.map(c => `
+        <div class="conn-badge">
+          ${c.from === n.id ? `→ Node #${c.to}` : `← Node #${c.from}`}
+          ${c.label ? `<span class="badge badge-amber" style="font-size:9px;padding:1px 5px">${c.label}</span>` : ''}
+        </div>`).join('') || '<span class="text-subtle text-xs">No connections</span>'}
+    </div>
+    <div class="ins-section">
+      <p class="ins-hdr">Position</p>
+      <div class="flex gap8">
+        <div class="fg" style="flex:1;margin:0"><label class="fl">X</label><input type="number" class="fi" value="${Math.round(n.x)}" oninput="updateNodePos(${n.id},'x',+this.value)"></div>
+        <div class="fg" style="flex:1;margin:0"><label class="fl">Y</label><input type="number" class="fi" value="${Math.round(n.y)}" oninput="updateNodePos(${n.id},'y',+this.value)"></div>
+      </div>
+    </div>`;
+}
+
+function screenJourney() {
+  const touchpoints = ['Awareness','Consideration','Decision','Onboarding','Growth'];
+  const emotions    = ['😐 Neutral','🤔 Curious','😊 Hopeful','😅 Uncertain','😄 Delighted'];
+  const channels    = ['Organic search','Ads / retargeting','Chatbot demo','Support bot','Proactive nudge'];
+  const dropoffs    = [12, 8, 22, 6, 3];
+  const opps = [
+    ['Personalise CTA','A/B test copy'],
+    ['FAQ bot','Comparison tool'],
+    ['Live chat trigger','Social proof'],
+    ['Guided tour','Video walkthrough'],
+    ['Upsell prompt','Loyalty program'],
+  ];
+  return `
+  <div class="journey-wrap" style="margin:-20px;padding:20px">
+    <table class="journey-table">
+      <thead>
+        <tr>
+          <th></th>
+          ${touchpoints.map(t => `<th>${t}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Emotion</td>
+          ${emotions.map(e => `<td><div class="emoji-big">${e.split(' ')[0]}</div><div style="font-size:11px;color:#6b7280;margin-top:3px">${e.split(' ').slice(1).join(' ')}</div></td>`).join('')}
+        </tr>
+        <tr>
+          <td>Channel</td>
+          ${channels.map(c => `<td>${c}</td>`).join('')}
+        </tr>
+        <tr>
+          <td>Drop-off</td>
+          ${dropoffs.map(d => `<td><strong style="color:#ef4444">${d}%</strong><div class="dp-bar" style="width:${d*3}px"></div></td>`).join('')}
+        </tr>
+        <tr>
+          <td>Opportunities</td>
+          ${opps.map(o => `<td>${o.map(t => `<span class="opp-tag">${t}</span>`).join('')}</td>`).join('')}
+        </tr>
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function setFlowView(v) {
+  S.flowView = v;
+  render();
+}
+
+/* ─── Flow drag ──────────────────────────────────────────────────────────────── */
+let FD = { active: false, nodeId: null, sx: 0, sy: 0, nx: 0, ny: 0 };
+
+function initFlowDrag() {
+  document.addEventListener('mousemove', onFlowMove);
+  document.addEventListener('mouseup', onFlowUp);
+}
+
+function nodeMouseDown(e, id) {
+  e.preventDefault();
+  e.stopPropagation();
+  const n = S.flowNodes.find(x => x.id === id);
+  if (!n) return;
+  FD = { active: true, nodeId: id, sx: e.clientX, sy: e.clientY, nx: n.x, ny: n.y };
+  selectNode(id);
+}
+
+function onFlowMove(e) {
+  if (!FD.active) return;
+  const n = S.flowNodes.find(x => x.id === FD.nodeId);
+  if (!n) return;
+  n.x = FD.nx + (e.clientX - FD.sx);
+  n.y = FD.ny + (e.clientY - FD.sy);
+  const el = document.getElementById('node-' + n.id);
+  if (el) { el.style.left = n.x + 'px'; el.style.top = n.y + 'px'; }
+  drawConnections();
+  // Update inspector position fields
+  const xEl = document.querySelector(`[oninput*="updateNodePos(${n.id},'x'"]`);
+  const yEl = document.querySelector(`[oninput*="updateNodePos(${n.id},'y'"]`);
+  if (xEl) xEl.value = Math.round(n.x);
+  if (yEl) yEl.value = Math.round(n.y);
+}
+
+function onFlowUp() { FD.active = false; }
+
+function selectNode(id) {
+  S.selectedNode = id;
+  document.querySelectorAll('.fn-body,.fn-start-circle,.fn-end-circle').forEach(el => el.classList.remove('selected'));
+  const n = S.flowNodes.find(x => x.id === id);
+  if (n) {
+    const el = document.getElementById('node-' + id);
+    if (el) el.querySelectorAll('.fn-body,.fn-start-circle,.fn-end-circle').forEach(b => b.classList.add('selected'));
+  }
+  const ins = document.querySelector('.flow-inspector');
+  if (ins) ins.innerHTML = flowInspector();
+}
+
+function deselectNode() {
+  S.selectedNode = null;
+  document.querySelectorAll('.fn-body,.fn-start-circle,.fn-end-circle').forEach(el => el.classList.remove('selected'));
+  const ins = document.querySelector('.flow-inspector');
+  if (ins) ins.innerHTML = `<div class="inspector-empty"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#d1d5db" stroke-width="1.5"><rect x="6" y="10" width="20" height="14" rx="3"/><circle cx="12" cy="17" r="2"/><circle cx="20" cy="17" r="2"/><path d="M12 21c2 1.5 6 1.5 8 0"/></svg><span>Select a node to inspect</span></div>`;
+}
+
+function drawConnections() {
+  const svg = document.getElementById('flow-svg');
+  if (!svg) return;
+  const defs = `<defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#c8cce0"/></marker><marker id="arr-hi" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#2255e8"/></marker></defs>`;
+  svg.innerHTML = defs + S.flowConnections.map(c => {
+    const fn = S.flowNodes.find(x => x.id === c.from);
+    const tn = S.flowNodes.find(x => x.id === c.to);
+    if (!fn || !tn) return '';
+    const fd = ND[fn.type], td = ND[tn.type];
+    const x1 = fn.x + fd.w;
+    const y1 = fn.y + (c.port === 'top' ? fd.h * .35 : c.port === 'bot' ? fd.h * .65 : fd.h / 2);
+    const x2 = tn.x;
+    const y2 = tn.y + td.h / 2;
+    const dx = Math.max(Math.abs(x2 - x1) * .5, 40);
+    const d = `M ${x1} ${y1} C ${x1+dx} ${y1} ${x2-dx} ${y2} ${x2} ${y2}`;
+    const hi = S.selectedNode === fn.id || S.selectedNode === tn.id;
+    const col = hi ? '#2255e8' : '#c8cce0';
+    const mid = { x: (x1 + x2) / 2, y: (y1 + y2) / 2 };
+    return `<path d="${d}" fill="none" stroke="${col}" stroke-width="${hi?2:1.5}" marker-end="url(#${hi?'arr-hi':'arr'})"/>
+      ${c.label ? `<rect x="${mid.x-16}" y="${mid.y-9}" width="32" height="16" rx="4" fill="#fff" stroke="${col}" stroke-width="1"/>
+        <text x="${mid.x}" y="${mid.y+4}" text-anchor="middle" font-size="9" fill="${hi?'#2255e8':'#9ca3af'}" font-family="DM Sans">${c.label}</text>` : ''}`;
+  }).join('');
+}
+
+function addFlowNode(type) {
+  const def = ND[type];
+  const id = Math.max(0, ...S.flowNodes.map(n => n.id)) + 1;
+  const n = { id, type, label: def.icon === '▶' ? 'Start' : def.icon === '■' ? 'End' : type.charAt(0).toUpperCase() + type.slice(1) + ' ' + id, x: 80 + (id * 30) % 200, y: 80 + (id * 25) % 150, sub: '' };
+  S.flowNodes.push(n);
+  const canvas = document.getElementById('flow-canvas');
+  if (!canvas) return;
+  const el = document.createElement('div');
+  el.innerHTML = flowNodeHtml(n);
+  const node = el.firstChild;
+  canvas.insertBefore(node, document.getElementById('flow-svg'));
+  drawConnections();
+}
+
+function deleteNode(id) {
+  S.flowNodes = S.flowNodes.filter(n => n.id !== id);
+  S.flowConnections = S.flowConnections.filter(c => c.from !== id && c.to !== id);
+  S.selectedNode = null;
+  render();
+}
+
+function updateNodeLabel(id, v) {
+  const n = S.flowNodes.find(x => x.id === id);
+  if (!n) return;
+  n.label = v;
+  const el = document.getElementById('node-' + id);
+  if (el) { const lbl = el.querySelector('.fn-label'); if (lbl) lbl.textContent = v; }
+}
+
+function updateNodeSub(id, v) {
+  const n = S.flowNodes.find(x => x.id === id);
+  if (!n) return;
+  n.sub = v;
+  const el = document.getElementById('node-' + id);
+  if (el) { const sub = el.querySelector('.fn-sub'); if (sub) sub.textContent = v; }
+}
+
+function updateNodePos(id, axis, v) {
+  const n = S.flowNodes.find(x => x.id === id);
+  if (!n) return;
+  n[axis] = v;
+  const el = document.getElementById('node-' + id);
+  if (el) el.style[axis === 'x' ? 'left' : 'top'] = v + 'px';
+  drawConnections();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SCREEN: AGENT ASSIST
+   ═══════════════════════════════════════════════════════════════════════════════ */
+const INBOX = [
+  { id:0, name:'Sarah M.',  status:'active',   time:'2m',  preview:'I didn\'t receive any email',     ch:'web',   unread:2 },
+  { id:1, name:'James K.',  status:'waiting',  time:'8m',  preview:'What\'s the enterprise pricing?', ch:'slack', unread:0 },
+  { id:2, name:'Priya R.',  status:'bot',      time:'1h',  preview:'My order hasn\'t arrived',        ch:'web',   unread:0 },
+  { id:3, name:'Tom W.',    status:'resolved', time:'2h',  preview:'Can I integrate Salesforce?',     ch:'api',   unread:0 },
+  { id:4, name:'Emma L.',   status:'resolved', time:'3h',  preview:'How do I export my data?',        ch:'web',   unread:0 },
+];
+
+const THREAD = [
+  { role:'bot',   text:'Hi Sarah! I\'m here to help. What can I assist you with today?' },
+  { role:'user',  text:'I need help resetting my password' },
+  { role:'bot',   text:'Of course! Could you confirm the email address on your account?' },
+  { role:'user',  text:'it\'s sarah.m@email.com' },
+  { role:'bot',   text:'Found your account. I\'m sending a password reset link now — check your inbox!' },
+  { role:'user',  text:'I didn\'t receive any email' },
+  { role:'bot',   text:'Let me escalate this to our support team who can help further.' },
+  { role:'agent', text:'Hi Sarah, I\'m Alex from the support team. Let me check this right away.' },
+];
+
+const SUGGESTIONS = [
+  { text: 'I can see the reset email was sent at 2:43 PM. Can you check your spam or junk folder?', conf: 92 },
+  { text: 'Let me resend the password reset link to a different email address if you have one.', conf: 85 },
+  { text: 'I\'ll manually reset your password and share temporary credentials via a secure channel.', conf: 71 },
+];
+
+function screenAssist() {
+  const ci = S.selectedInbox;
+  return `
+  <div class="assist-layout" style="margin:-20px">
+    <!-- Inbox -->
+    <div class="assist-inbox">
+      <div class="inbox-search"><input class="inbox-search-fi" placeholder="Search conversations…"></div>
+      ${INBOX.map((item,i) => {
+        const stColor = {active:'#10b981',waiting:'#f59e0b',bot:'#2255e8',resolved:'#9ca3af'}[item.status];
+        return `<div class="inbox-item ${ci===i?'active':''}" onclick="selectInbox(${i})">
+          <div class="inbox-hdr">
+            <span class="inbox-name">${item.name}</span>
+            <span class="inbox-time">${item.time}</span>
+          </div>
+          <div class="inbox-preview">${item.preview}</div>
+          <div class="inbox-meta">
+            <span class="dot" style="background:${stColor}"></span>
+            <span class="text-subtle text-xs">${item.status}</span>
+            <span class="badge badge-gray text-xs" style="font-size:9px;padding:1px 5px">${item.ch}</span>
+            ${item.unread > 0 ? `<span class="badge badge-blue" style="font-size:9px;padding:1px 6px;margin-left:auto">${item.unread}</span>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <!-- Thread -->
+    <div class="assist-thread">
+      <div class="thread-hdr">
+        <div class="msg-avatar" style="background:#eef2fd;color:#2255e8;font-size:11px">SM</div>
+        <span class="thread-user-name">${INBOX[ci].name}</span>
+        <span class="badge badge-${ci===0?'green':'gray'}">${INBOX[ci].status}</span>
+        <div class="tb-actions">
+          <button class="btn btn-ghost btn-xs">Assign</button>
+          <button class="btn btn-ghost btn-xs">Tag</button>
+          <button class="btn btn-ghost btn-xs">${ICO.more}</button>
+        </div>
+      </div>
+      <div class="thread-msgs">
+        <div style="text-align:center;margin:8px 0">
+          <span class="badge badge-gray">Today · Conversation started via ${INBOX[ci].ch}</span>
+        </div>
+        ${THREAD.map(m => {
+          const avatarContent = m.role === 'user' ? 'SM' : m.role === 'agent' ? 'AX' : '🤖';
+          const avatarBg = m.role === 'user' ? '#1a1d2e' : m.role === 'agent' ? '#d1fae5' : '#eef2fd';
+          const avatarColor = m.role === 'user' ? '#fff' : m.role === 'agent' ? '#065f46' : '#2255e8';
+          return `<div class="msg ${m.role}">
+            ${m.role !== 'user' ? `<div class="msg-avatar" style="background:${avatarBg};color:${avatarColor}">${avatarContent}</div>` : ''}
+            <div class="msg-bubble">${m.text}</div>
+            ${m.role === 'user' ? `<div class="msg-avatar" style="background:${avatarBg};color:${avatarColor}">${avatarContent}</div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="thread-input-wrap">
+        <div class="thread-toolbar">
+          <button class="t-tool active">Reply</button>
+          <button class="t-tool">Note</button>
+          <button class="t-tool">Transfer</button>
+          <button class="t-tool" style="margin-left:auto">Resolve ✓</button>
+        </div>
+        <div class="thread-row">
+          <input class="thread-fi" placeholder="Type a reply… (↵ to send)">
+          <button class="btn btn-primary btn-sm">${ICO.send}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Suggestions -->
+    <div class="assist-right">
+      <div class="sugg-hdr">
+        <span class="sugg-title">AI Suggestions</span>
+        <span class="sugg-badge">GPT-4o</span>
+      </div>
+      <div class="sugg-list">
+        ${SUGGESTIONS.map(s => `
+          <div class="sugg-item" onclick="useReply(this,'${s.text.replace(/'/g,"\\'")}')">
+            <div class="sugg-text">${s.text}</div>
+            <div class="sugg-foot">
+              <span class="conf-label">Confidence</span>
+              <div class="conf-bar-wrap"><div class="conf-bar" style="width:${s.conf}%"></div></div>
+              <span class="conf-pct">${s.conf}%</span>
+            </div>
+          </div>`).join('')}
+        <div class="hr"></div>
+        <p class="text-subtle text-xs mb8">Context snippets</p>
+        ${['Password reset docs','Email delivery guide','Account security FAQ'].map(k => `
+          <div style="padding:6px 9px;background:#f8f9fc;border-radius:7px;font-size:11px;color:#374151;margin-bottom:5px;cursor:pointer;border:1px solid #f0f2f7">
+            📄 ${k}
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function selectInbox(i) {
+  S.selectedInbox = i;
+  render();
+}
+
+function useReply(el, text) {
+  const fi = document.querySelector('.thread-fi');
+  if (fi) fi.value = text;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SCREEN: ANALYTICS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function screenAnalytics() {
+  return `
+  <div class="stat-row mb14">
+    ${[['8,421','Total conversations'],['87.4%','Resolution rate'],['1.3s','Avg response time'],['94.2%','CSAT score'],['2,180','Unique users'],['23min','Avg session time']].map(([v,l]) => `
+      <div class="stat-item"><div class="stat-v">${v}</div><div class="stat-l">${l}</div></div>`).join('')}
+  </div>
+  <div class="g2 mb14">
+    <div class="card">
+      <p class="card-title mb4">Conversation Volume</p>
+      <p class="card-sub">Daily conversations over the last 12 months</p>
+      <canvas class="linechart" id="analytics-line"></canvas>
+    </div>
+    <div class="card">
+      <p class="card-title mb4">Channel Breakdown</p>
+      <p class="card-sub">Traffic distribution by integration</p>
+      <div class="flex items-center gap14" style="margin-top:12px">
+        <div class="donut-wrap">
+          <canvas class="donut" id="analytics-donut" width="120" height="120"></canvas>
+          <div class="donut-center"><div class="donut-pct">8.4k</div><div class="donut-sub">total</div></div>
+        </div>
+        <div>
+          ${[['Web Widget','45%','#2255e8'],['REST API','30%','#10b981'],['Slack','15%','#f59e0b'],['WhatsApp','10%','#8b5cf6']].map(([l,p,c]) => `
+            <div class="legend-item"><span class="legend-dot" style="background:${c}"></span><span style="flex:1">${l}</span><strong>${p}</strong></div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <p class="card-title mb4">Top Intents</p>
+      <p class="card-sub">Most frequent user topics this period</p>
+      ${[
+        ['Password Reset',38,'#2255e8'],['Billing Query',29,'#10b981'],['Feature Request',22,'#f59e0b'],
+        ['Bug Report',18,'#ef4444'],['Plan Upgrade',14,'#8b5cf6'],['Cancellation',8,'#6b7280'],
+      ].map(([lbl,pct,c]) => `
+        <div style="margin-bottom:9px">
+          <div class="flex justify-between mb4"><span style="font-size:12px;color:#374151">${lbl}</span><span class="text-subtle text-xs">${pct}%</span></div>
+          <div style="height:6px;background:#f0f2f7;border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${c};border-radius:3px;transition:width .5s"></div>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div class="card">
+      <p class="card-title mb4">Resolution Outcomes</p>
+      <p class="card-sub">How conversations ended</p>
+      <div style="margin-top:8px">
+        ${[
+          ['Bot resolved','62%','#10b981'],['Agent resolved','25%','#2255e8'],
+          ['User abandoned','9%','#f59e0b'],['Unresolved','4%','#ef4444'],
+        ].map(([lbl,pct,c]) => `
+          <div style="margin-bottom:11px">
+            <div class="flex justify-between mb4"><span style="font-size:12px;color:#374151">${lbl}</span><strong style="font-size:12px">${pct}</strong></div>
+            <div style="height:8px;background:#f0f2f7;border-radius:4px;overflow:hidden">
+              <div style="height:100%;width:${pct};background:${c};border-radius:4px;transition:width .5s"></div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SCREEN: INTEGRATIONS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+const INTEGRATIONS = [
+  { logo:'💼', name:'Salesforce',   desc:'Sync contacts, cases, and pipeline data bi-directionally.',      connected:true,  cat:'CRM'    },
+  { logo:'🎧', name:'Zendesk',      desc:'Create tickets and sync agent activity from conversations.',      connected:true,  cat:'Support'},
+  { logo:'📊', name:'HubSpot',      desc:'Push leads, contacts, and chat transcripts to HubSpot CRM.',     connected:false, cat:'CRM'    },
+  { logo:'💜', name:'Slack',        desc:'Deploy the bot in Slack channels and DMs.',                       connected:true,  cat:'Comms'  },
+  { logo:'🔷', name:'Teams',        desc:'Integrate with Microsoft Teams for internal support bots.',       connected:false, cat:'Comms'  },
+  { logo:'📱', name:'WhatsApp',     desc:'Connect via WhatsApp Business API for mobile conversations.',     connected:false, cat:'Comms'  },
+  { logo:'📦', name:'Shopify',      desc:'Answer order, tracking, and returns queries automatically.',      connected:true,  cat:'E-comm' },
+  { logo:'🔔', name:'PagerDuty',    desc:'Trigger alerts and escalations when thresholds are breached.',    connected:false, cat:'Ops'    },
+  { logo:'📈', name:'Mixpanel',     desc:'Send conversation events to Mixpanel for funnel analysis.',       connected:false, cat:'Analytics'},
+  { logo:'🪝', name:'Webhooks',     desc:'Post real-time events to any HTTP endpoint you control.',         connected:true,  cat:'Dev'    },
+  { logo:'🔗', name:'REST API',     desc:'Embed the bot via REST API in any custom application.',           connected:true,  cat:'Dev'    },
+  { logo:'📧', name:'Mailchimp',    desc:'Add opt-in users to email sequences from chat.',                  connected:false, cat:'Marketing'},
+];
+
+function screenIntegrations() {
+  return `
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px">
+    ${INTEGRATIONS.map(int => `
+      <div class="int-card">
+        <div class="int-logo">${int.logo}</div>
+        <div class="int-name">${int.name}</div>
+        <div class="int-desc">${int.desc}</div>
+        <div class="int-foot">
+          <span class="badge ${int.connected ? 'badge-green' : 'badge-gray'}">${int.connected ? '● Connected' : '○ Not connected'}</span>
+          <button class="btn btn-ghost btn-xs" onclick="toggleIntegration('${int.name}')">${int.connected ? 'Configure' : 'Connect'}</button>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function toggleIntegration(name) {
+  const int = INTEGRATIONS.find(i => i.name === name);
+  if (int) { int.connected = !int.connected; render(); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SCREEN: EMULATOR
+   ═══════════════════════════════════════════════════════════════════════════════ */
+const EMU_RESPONSES = [
+  'I can help with that! Could you share a bit more detail?',
+  'Thanks for reaching out. Let me look into this for you.',
+  'Great question! Here\'s what I found in our knowledge base: this feature was added in v2.4.',
+  'I\'m checking your account details now. One moment please.',
+  'It looks like your issue has been escalated to our support team. Someone will reach out within 2 hours.',
+];
+
+function screenEmulator() {
+  return `
+  <div class="emu-layout" style="margin-top:0">
+    <div class="emu-chat">
+      <div class="emu-chat-hdr">
+        <div class="fn-icon" style="background:#2255e8;font-size:13px">🤖</div>
+        <div><div style="font-size:12px;font-weight:600">${S.botSetupData.displayName}</div><div class="text-subtle text-xs">Emulator · Support Bot</div></div>
+        <span class="badge badge-green" style="margin-left:auto">● Live</span>
+      </div>
+      <div class="emu-chat-msgs" id="emu-msgs">
+        ${S.emuMessages.map(m => `
+          <div class="msg ${m.role}">
+            ${m.role === 'bot' ? `<div class="msg-avatar" style="background:#eef2fd;color:#2255e8">🤖</div>` : ''}
+            <div class="msg-bubble">${m.text}</div>
+            ${m.role === 'user' ? `<div class="msg-avatar" style="background:#1a1d2e;color:#fff">U</div>` : ''}
+          </div>`).join('')}
+      </div>
+      <div class="emu-input-row">
+        <input class="emu-fi" id="emu-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter')emuSend()">
+        <button class="btn btn-primary btn-sm" onclick="emuSend()">${ICO.send}</button>
+      </div>
+    </div>
+    <div class="emu-debug">
+      <div class="emu-debug-hdr">
+        <span style="font-size:12px;font-weight:600">Debug panel</span>
+        <span class="badge badge-blue">Live</span>
+      </div>
+      <div class="emu-debug-body">
+        <div class="debug-section">
+          <p class="debug-lbl">Intent Recognition</p>
+          ${[
+            ['Top intent','password_reset'],['Confidence','0.94'],['Entity: email','sarah@…'],['Entity: action','reset'],
+          ].map(([k,v]) => `<div class="debug-item"><span class="debug-key">${k}</span><span class="debug-val">${v}</span></div>`).join('')}
+        </div>
+        <div class="debug-section">
+          <p class="debug-lbl">All Intents</p>
+          ${[['password_reset',94,'#10b981'],['account_access',71,'#2255e8'],['billing_query',12,'#f59e0b'],['feature_request',4,'#9ca3af']].map(([l,c,col]) => `
+            <div class="conf-mini">
+              <span style="width:110px;color:#6b7280;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l}</span>
+              <div class="conf-mini-bar"><div class="conf-mini-fill" style="width:${c}%;background:${col}"></div></div>
+              <span style="min-width:28px;text-align:right;font-size:10px;font-weight:600;color:#374151">${c}%</span>
+            </div>`).join('')}
+        </div>
+        <div class="debug-section">
+          <p class="debug-lbl">Flow path</p>
+          <div class="flow-path">
+            <span class="path-node">Start</span>
+            <span class="path-arrow">›</span>
+            <span class="path-node">Welcome Msg</span>
+            <span class="path-arrow">›</span>
+            <span class="path-node">Intent Check</span>
+            <span class="path-arrow">›</span>
+            <span class="path-node badge-blue" style="background:#eef2fd;color:#2255e8">FAQ Reply</span>
+          </div>
+        </div>
+        <div class="debug-section">
+          <p class="debug-lbl">Session</p>
+          ${[['Turn','3 / 6'],['Duration','1m 24s'],['Mode','Bot'],['Lang','en-US']].map(([k,v]) => `
+            <div class="debug-item"><span class="debug-key">${k}</span><span class="debug-val">${v}</span></div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function emuSend() {
+  const fi = document.getElementById('emu-input');
+  if (!fi || !fi.value.trim()) return;
+  const txt = fi.value.trim();
+  fi.value = '';
+  S.emuMessages.push({ role: 'user', text: txt });
+  setTimeout(() => {
+    S.emuMessages.push({ role: 'bot', text: EMU_RESPONSES[Math.floor(Math.random() * EMU_RESPONSES.length)] });
+    const msgs = document.getElementById('emu-msgs');
+    if (msgs) {
+      msgs.innerHTML = S.emuMessages.map(m => `
+        <div class="msg ${m.role}">
+          ${m.role === 'bot' ? `<div class="msg-avatar" style="background:#eef2fd;color:#2255e8">🤖</div>` : ''}
+          <div class="msg-bubble">${m.text}</div>
+          ${m.role === 'user' ? `<div class="msg-avatar" style="background:#1a1d2e;color:#fff">U</div>` : ''}
+        </div>`).join('');
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+  }, 800);
+  const msgs = document.getElementById('emu-msgs');
+  if (msgs) {
+    msgs.innerHTML += `<div class="msg user"><div class="msg-bubble" style="background:#2255e8;color:#fff;border-bottom-right-radius:4px">${txt}</div><div class="msg-avatar" style="background:#1a1d2e;color:#fff">U</div></div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+}
+
+function resetEmu() {
+  S.emuMessages = [{ role: 'bot', text: 'Hi! I\'m Aria. How can I help you today?' }];
+  render();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SCREEN: KNOWLEDGE BASE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function screenKB() {
+  const typeIcon = { Text:'📝', URL:'🔗', PDF:'📄' };
+  return `
+  <div class="card">
+    <div class="flex items-center justify-between mb12">
+      <div>
+        <p class="card-title">Sources</p>
+        <p class="card-sub">${S.kbItems.length} sources · Last trained 2h ago</p>
+      </div>
+      <div class="flex gap8">
+        <button class="btn btn-ghost btn-sm">Filter ${ICO.chevron_d}</button>
+      </div>
+    </div>
+    <table class="kb-table w100">
+      <thead><tr>
+        <th style="width:36px"></th>
+        <th>Name</th><th>Type</th><th>Words</th><th>Updated</th><th>Status</th><th>Training</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${S.kbItems.map(item => `
+          <tr>
+            <td><div class="kb-icon" style="background:${item.type==='PDF'?'#fee2e2':item.type==='URL'?'#dbeafe':'#d1fae5'}">${typeIcon[item.type]}</div></td>
+            <td style="font-weight:500;color:#1a1d2e">${item.name}</td>
+            <td><span class="badge ${item.type==='PDF'?'badge-red':item.type==='URL'?'badge-blue':'badge-green'}">${item.type}</span></td>
+            <td class="text-muted">${item.words.toLocaleString()}</td>
+            <td class="text-muted">${item.updated}</td>
+            <td><span class="badge ${item.status==='trained'?'badge-green':item.status==='training'?'badge-amber':'badge-gray'}">${item.status}</span></td>
+            <td style="min-width:100px">
+              <div style="font-size:10px;color:#9ca3af;margin-bottom:3px">${item.pct}%</div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${item.pct}%"></div></div>
+            </td>
+            <td>
+              <div class="flex gap4">
+                <button class="btn btn-ghost btn-xs">Edit</button>
+                <button class="btn btn-ghost btn-xs" onclick="retrain(${item.id})">Retrain</button>
+                <button class="btn btn-ghost btn-xs" onclick="deleteKB(${item.id})">${ICO.trash}</button>
+              </div>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function retrain(id) {
+  const item = S.kbItems.find(i => i.id === id);
+  if (item) { item.status = 'training'; item.pct = 0; render(); setTimeout(() => { item.status = 'trained'; item.pct = 100; render(); }, 2000); }
+}
+
+function deleteKB(id) { S.kbItems = S.kbItems.filter(i => i.id !== id); render(); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CHART UTILITIES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function drawSparkline(id, data, color) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.offsetWidth; const h = canvas.offsetHeight || 44;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const pad = 4;
+  const pts = data.map((v, i) => ({
+    x: pad + (i / (data.length - 1)) * (w - pad * 2),
+    y: h - pad - ((v - min) / range) * (h - pad * 2)
+  }));
+  // Fill
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, h);
+  pts.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, h);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, color + '30'); g.addColorStop(1, color + '00');
+  ctx.fillStyle = g; ctx.fill();
+  // Line
+  ctx.beginPath();
+  pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; ctx.stroke();
+  // Last dot
+  const last = pts[pts.length - 1];
+  ctx.beginPath(); ctx.arc(last.x, last.y, 3, 0, Math.PI * 2);
+  ctx.fillStyle = color; ctx.fill();
+}
+
+function drawBarChart(id, labels, values, color) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.offsetWidth; const h = canvas.offsetHeight || 140;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const max = Math.max(...values);
+  const n = values.length;
+  const gutter = 8, lblH = 22, topPad = 10;
+  const bw = Math.floor((w - gutter * (n + 1)) / n);
+  ctx.font = `${10 * dpr / dpr}px DM Sans`; ctx.textAlign = 'center';
+  values.forEach((v, i) => {
+    const bh = ((v / max) * (h - lblH - topPad));
+    const x = gutter + i * (bw + gutter);
+    const y = h - lblH - bh;
+    ctx.fillStyle = color + (i === 0 ? '' : '99');
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, bw, bh, 3);
+    else ctx.rect(x, y, bw, bh);
+    ctx.fill();
+    ctx.fillStyle = '#9ca3af';
+    const short = labels[i].length > 7 ? labels[i].slice(0,6)+'…' : labels[i];
+    ctx.fillText(short, x + bw / 2, h - 5);
+  });
+}
+
+function drawLineChart(id, data, labels) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.offsetWidth; const h = canvas.offsetHeight || 160;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const min = Math.min(...data), max = Math.max(...data), range = max - min || 1;
+  const pad = { t: 10, b: 28, l: 10, r: 10 };
+  const pts = data.map((v, i) => ({
+    x: pad.l + (i / (data.length - 1)) * (w - pad.l - pad.r),
+    y: pad.t + ((max - v) / range) * (h - pad.t - pad.b)
+  }));
+  // Grid lines
+  ctx.strokeStyle = '#f0f2f7'; ctx.lineWidth = 1;
+  [0, 0.25, 0.5, 0.75, 1].forEach(p => {
+    const y = pad.t + p * (h - pad.t - pad.b);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+  });
+  // Fill
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, h - pad.b);
+  pts.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, h - pad.b);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(0, pad.t, 0, h - pad.b);
+  g.addColorStop(0, '#2255e840'); g.addColorStop(1, '#2255e805');
+  ctx.fillStyle = g; ctx.fill();
+  // Line
+  ctx.beginPath();
+  pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = '#2255e8'; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+  // Labels
+  ctx.fillStyle = '#9ca3af'; ctx.font = `10px DM Sans`; ctx.textAlign = 'center';
+  labels.filter((_, i) => i % 2 === 0).forEach((l, i) => {
+    const realIdx = i * 2;
+    ctx.fillText(l, pts[realIdx].x, h - 6);
+  });
+}
+
+function drawDonut(id, data, colors) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const size = 120;
+  canvas.width = size * dpr; canvas.height = size * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const cx = size / 2, cy = size / 2, r = 48, inner = 32;
+  const total = data.reduce((a, b) => a + b, 0);
+  let angle = -Math.PI / 2;
+  data.forEach((v, i) => {
+    const sweep = (v / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, angle, angle + sweep);
+    ctx.arc(cx, cy, inner, angle + sweep, angle, true);
+    ctx.closePath();
+    ctx.fillStyle = colors[i]; ctx.fill();
+    angle += sweep;
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function init() {
+  render();
+  // Cleanup flow drag listeners on navigate
+  window.addEventListener('hashchange', () => {
+    document.removeEventListener('mousemove', onFlowMove);
+    document.removeEventListener('mouseup', onFlowUp);
+  });
+}
+
+init();
+</script>
+</body>
+</html>
