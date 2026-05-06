@@ -487,7 +487,9 @@ svg.cig-svg{width:100%;height:100%;overflow:visible}
     <div class="sb-bots" id="sidebar-bots"></div>
     <div style="padding:8px 16px 10px;border-top:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between">
       <span style="font-size:10px;font-weight:600;color:#9ca3af;letter-spacing:.05em">v0.2.0</span>
-      <span style="font-size:10px;color:#c5c9d8">Concept build</span>
+      <span style="font-size:10px;color:${S.db.connected?'#10b981':'#c5c9d8'};cursor:pointer" onclick="navigate('settings')" title="${S.db.connected?'Supabase connected':'Click to configure storage'}">
+        ${S.db.connected ? '● Cloud' : 'Local only'}
+      </span>
     </div>
   </aside>
   <div id="main">
@@ -511,8 +513,23 @@ window.onerror = function(msg, src, line, col, err) {
    =============================================================================== */
 const S = {
   screen: 'dashboard',
-  /* LLM config */
-  llm: { provider: null, apiKey: '', enabled: false, loading: false },
+  /* LLM + proxy config — persisted to localStorage */
+  llm: {
+    provider: localStorage.getItem('bs_llm_provider') || null,
+    apiKey:   localStorage.getItem('bs_llm_key')      || '',
+    proxyUrl: localStorage.getItem('bs_proxy_url')    || '',
+    enabled:  localStorage.getItem('bs_llm_on') === '1',
+    loading: false,
+    showSettings: false,
+  },
+  /* Supabase cloud storage */
+  db: {
+    url:       localStorage.getItem('bs_sb_url')  || '',
+    anonKey:   localStorage.getItem('bs_sb_key')  || '',
+    connected: false,
+    testing:   false,
+    syncing:   false,
+  },
   llmHistory: [],          /* clean text history for LLM context */
   llmExtracted: null,      /* CIG extracted from last conversation */
   /* design wizard state */
@@ -612,6 +629,7 @@ const ICO = {
   cigReview:   `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="5" width="4" height="3" rx="1"/><rect x="6" y="2" width="4" height="3" rx="1"/><rect x="6" y="9" width="4" height="3" rx="1"/><rect x="11" y="5" width="3" height="3" rx="1"/><path d="M5 6.5h1M10 3.5h1l1.5 2-1.5 2H10M10 10.5h1" stroke-linecap="round"/></svg>`,
   kbGather:    `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="1.5" width="11" height="12" rx="1.5"/><path d="M5 5.5h5M5 7.5h5M5 9.5h3" stroke-linecap="round"/><circle cx="4" cy="5.5" r=".8" fill="currentColor" stroke="none"/><circle cx="4" cy="7.5" r=".8" fill="currentColor" stroke="none"/><circle cx="4" cy="9.5" r=".8" fill="currentColor" stroke="none"/></svg>`,
   sparkle:     `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M7 1v2M7 11v2M1 7h2M11 7h2M3 3l1.5 1.5M9.5 9.5l1.5 1.5M3 11l1.5-1.5M9.5 4.5l1.5-1.5M7 5a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>`,
+  settingsGear:`<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7.5" cy="7.5" r="2"/><path d="M7.5 1.5v1M7.5 12.5v1M1.5 7.5h1M12.5 7.5h1M3.4 3.4l.7.7M10.9 10.9l.7.7M10.9 4.1l-.7.7M4.1 10.9l-.7.7" stroke-linecap="round"/></svg>`,
 };
 
 /* ===============================================================================
@@ -646,8 +664,11 @@ const NAV_GROUPS = [
     { id: 'dashboard',  label: 'Dashboard',      icon: 'dashboard'   },
   ]},
   { label: 'Measure', items: [
-    { id: 'analytics',  label: 'Analytics',      icon: 'analytics'   },
-    { id: 'integrations',label:'Integrations',   icon: 'integrations'},
+    { id: 'analytics',    label: 'Analytics',     icon: 'analytics'    },
+    { id: 'integrations', label: 'Integrations',  icon: 'integrations' },
+  ]},
+  { label: 'Platform', items: [
+    { id: 'settings',     label: 'Settings',      icon: 'settingsGear' },
   ]},
 ];
 
@@ -787,6 +808,7 @@ function renderTopbar() {
     'design-input': topbarDesignInput,
     'cig-review':   topbarCigReview,
     'kb-gather':    topbarKbGather,
+    'settings':     topbarSettings,
   };
   tb.innerHTML = (map[S.screen] || (() => `<span class="tb-title">${S.screen}</span>`))();
 }
@@ -806,6 +828,7 @@ function renderContent() {
     'design-input': screenDesignInput,
     'cig-review':   screenCigReview,
     'kb-gather':    screenKbGather,
+    'settings':     screenSettings,
   };
   c.innerHTML = (map[S.screen] || (() => `<p class="text-muted">Coming soon.</p>`))();
   afterRender();
@@ -1005,6 +1028,9 @@ function topbarCigReview() {
     <span class="text-muted text-sm">${cig ? cig.name : 'No design generated'}</span>
     <div class="tb-actions">
       <button class="btn btn-ghost btn-sm" onclick="navigate('design-input')">← Edit input</button>
+      ${S.db.connected ? `<button class="btn btn-ghost btn-sm" onclick="dbSaveBot()">
+        ${S.db.syncing ? '⏳ Saving…' : '☁ Save to Supabase'}
+      </button>` : `<button class="btn btn-ghost btn-sm" onclick="navigate('settings')" title="Connect Supabase to save">☁ Save project</button>`}
       <button class="btn btn-secondary btn-sm" onclick="navigate('kb-gather')">Gather knowledge →</button>
       <button class="btn btn-primary btn-sm" onclick="navigate('emulator')">${ICO.emulator} Preview bot</button>
     </div>`;
@@ -2559,12 +2585,10 @@ RULES
 
 /* ─── LLM call (Gemini or Claude, direct from browser) ──────────────────── */
 async function callLLM(userText) {
-  const { provider, apiKey } = S.llm;
-  if (!provider || !apiKey) return null;
+  const { provider, apiKey, proxyUrl } = S.llm;
+  if (!provider || (!apiKey && !proxyUrl)) return null;
 
-  /* build clean history (strip HTML tags for LLM) */
-  const clean = t => t.replace(/<br\s*\/?>/gi,' ').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
-  const history = S.llmHistory.slice(-16); /* last 16 turns max */
+  const history = S.llmHistory.slice(-16);
 
   try {
     if (provider === 'gemini') {
@@ -2573,41 +2597,50 @@ async function callLLM(userText) {
         parts: [{ text: m.content }]
       }));
       contents.push({ role:'user', parts:[{ text: userText }] });
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        { method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({
-            system_instruction: { parts:[{ text: COCO_SYSTEM_PROMPT }] },
-            contents,
-            generationConfig: { maxOutputTokens:512, temperature:0.7 }
-          })
-        }
-      );
+      const body = {
+        system_instruction: { parts:[{ text: COCO_SYSTEM_PROMPT }] },
+        contents,
+        generationConfig: { maxOutputTokens:600, temperature:0.7 }
+      };
+      let res;
+      if (proxyUrl) {
+        /* route through proxy — key stays server-side */
+        res = await fetch(proxyUrl, {
+          method:'POST', headers:{'Content-Type':'application/json','x-provider':'gemini'},
+          body: JSON.stringify({ ...body, model:'gemini-2.0-flash' })
+        });
+      } else {
+        res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+          { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }
+        );
+      }
       const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
+      if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
       return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
     }
 
     if (provider === 'claude') {
-      /* build alternating user/assistant array — Claude requires strict alternation */
       const msgs = [];
       history.forEach(m => msgs.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
       msgs.push({ role:'user', content: userText });
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST',
-        headers:{
-          'Content-Type':'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version':'2023-06-01',
-          'anthropic-dangerous-allow-browser':'true'
-        },
-        body: JSON.stringify({
-          model:'claude-3-5-haiku-20241022',
-          max_tokens:512,
-          system: COCO_SYSTEM_PROMPT,
-          messages: msgs
-        })
-      });
+      const body = { model:'claude-3-5-haiku-20241022', max_tokens:600, system: COCO_SYSTEM_PROMPT, messages: msgs };
+      let res;
+      if (proxyUrl) {
+        /* proxy — API key stays on the server */
+        res = await fetch(proxyUrl, {
+          method:'POST', headers:{'Content-Type':'application/json','x-provider':'claude'},
+          body: JSON.stringify(body)
+        });
+      } else {
+        /* direct — fine for demo, API key in browser */
+        res = await fetch('https://api.anthropic.com/v1/messages', {
+          method:'POST',
+          headers:{'Content-Type':'application/json','x-api-key':apiKey,
+            'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},
+          body: JSON.stringify(body)
+        });
+      }
       const data = await res.json();
       if (data.error) throw new Error(data.error?.message || JSON.stringify(data.error));
       return data.content?.[0]?.text || null;
@@ -2872,9 +2905,15 @@ function screenEmulator() {
 
 function toggleLlmSettings() { S.llm.showSettings = !S.llm.showSettings; render(); }
 function setLlmProvider(p) { S.llm.provider = p; S.llm.enabled = false; if (!p) S.llm.apiKey=''; render(); }
-function addToPatternLib() {
-  /* in a real system this would POST to the pattern library API */
-  alert('Pattern added to library! In production this would be stored and available as a template for similar businesses.');
+async function addToPatternLib() {
+  if (!S.llmExtracted || S.llmExtracted.error) return;
+  if (S.db.connected) {
+    await dbSavePattern(S.llmExtracted);
+    await dbSaveConversation();
+    alert('Pattern saved to Supabase pattern library + conversation logged.');
+  } else {
+    alert('Pattern extracted (shown below). Connect Supabase in Settings to persist it to the pattern library and make it available as a template for similar businesses.');
+  }
 }
 
 function emuSend(txt) {
@@ -3225,6 +3264,263 @@ function retrain(id) {
 function deleteKB(id) { S.kbItems = S.kbItems.filter(i => i.id !== id); render(); }
 
 /* ===============================================================================
+   SUPABASE REST CLIENT  (no SDK — pure fetch)
+   =============================================================================== */
+const DB = {
+  async req(path, method = 'GET', body = null) {
+    const { url, anonKey } = S.db;
+    if (!url || !anonKey) return null;
+    try {
+      const res = await fetch(`${url}/rest/v1/${path}`, {
+        method,
+        headers: {
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': method === 'POST' ? 'return=representation' : 'return=representation',
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const text = await res.text();
+      return text ? JSON.parse(text) : null;
+    } catch(e) { console.warn('DB error:', e); return null; }
+  },
+};
+
+async function dbTest() {
+  S.db.testing = true; render();
+  const r = await DB.req('bots?limit=1&select=id');
+  S.db.connected = Array.isArray(r);
+  S.db.testing = false;
+  if (S.db.connected) {
+    localStorage.setItem('bs_sb_url', S.db.url);
+    localStorage.setItem('bs_sb_key', S.db.anonKey);
+    await dbLoadBots();
+  }
+  render();
+}
+
+async function dbLoadBots() {
+  const rows = await DB.req('bots?order=created_at.desc&select=id,name,status');
+  if (Array.isArray(rows) && rows.length) {
+    S.bots = rows.map(r => ({ id: r.id, name: r.name, status: r.status || 'live' }));
+    render();
+  }
+}
+
+async function dbSaveBot() {
+  if (!S.db.connected || !S.cigData) return;
+  S.db.syncing = true; render();
+  const payload = {
+    name:     S.botSetupData.displayName || S.botSetupData.name || 'My Bot',
+    industry: S.cigData.industry || 'general',
+    status:   'draft',
+    cig:      S.cigData,
+    config:   S.botSetupData,
+  };
+  const r = await DB.req('bots', 'POST', payload);
+  S.db.syncing = false;
+  if (Array.isArray(r) && r[0]) {
+    S.bots.unshift({ id: r[0].id, name: r[0].name, status: 'draft' });
+    alert(`Saved to Supabase — ID: ${r[0].id.slice(0,8)}…`);
+  }
+  render();
+}
+
+async function dbSaveConversation() {
+  if (!S.db.connected || S.llmHistory.length < 2) return;
+  await DB.req('conversations', 'POST', {
+    session_id:    `emu-${Date.now()}`,
+    provider:      S.llm.provider || 'keywords',
+    turns:         S.llmHistory,
+    outcome:       'completed',
+    extracted_cig: S.llmExtracted || null,
+    quality_score: S.llmExtracted?.quality_score || null,
+  });
+}
+
+async function dbSavePattern(pattern) {
+  if (!S.db.connected) return;
+  await DB.req('patterns', 'POST', {
+    industry:      S.cigData?.industry || 'general',
+    cig:           pattern,
+    quality_score: pattern.quality_score || null,
+    notes:         pattern.notes || null,
+  });
+}
+
+/* persist LLM config to localStorage on change */
+function saveLlmConfig() {
+  localStorage.setItem('bs_llm_provider', S.llm.provider || '');
+  localStorage.setItem('bs_llm_key',      S.llm.apiKey   || '');
+  localStorage.setItem('bs_proxy_url',    S.llm.proxyUrl || '');
+  localStorage.setItem('bs_llm_on',       S.llm.enabled ? '1' : '0');
+}
+
+/* ===============================================================================
+   SCREEN: SETTINGS
+   =============================================================================== */
+function topbarSettings() {
+  return `${ICO.settingsGear}
+    <span class="tb-title">Settings</span>
+    <span class="tb-divider"></span>
+    <span class="text-muted text-sm">Storage · AI · Proxy</span>
+    ${S.db.connected ? `<span class="badge badge-green" style="margin-left:8px">● Supabase connected</span>` : ''}`;
+}
+
+function screenSettings() {
+  const dbStatus = S.db.testing ? '⏳ Testing…'
+    : S.db.connected ? '<span style="color:#10b981">● Connected</span>'
+    : S.db.url ? '<span style="color:#ef4444">✕ Not connected</span>'
+    : '<span style="color:#9ca3af">Not configured</span>';
+
+  const proxyHint = S.llm.proxyUrl
+    ? `<span style="color:#10b981;font-size:10px">● Proxy active — API key stays server-side</span>`
+    : `<span style="color:#9ca3af;font-size:10px">Direct browser call — fine for demo, use proxy for production</span>`;
+
+  const schemaSql = `create table bots (id uuid default gen_random_uuid() primary key, name text, industry text, status text default 'draft', cig jsonb, config jsonb, created_at timestamptz default now());
+create table conversations (id uuid default gen_random_uuid() primary key, turns jsonb, provider text, outcome text, extracted_cig jsonb, quality_score int, created_at timestamptz default now());
+create table patterns (id uuid default gen_random_uuid() primary key, industry text, cig jsonb, quality_score int, notes text, use_count int default 0, created_at timestamptz default now());
+-- RLS (open for demo)
+alter table bots enable row level security; alter table conversations enable row level security; alter table patterns enable row level security;
+create policy "open" on bots for all using (true) with check (true);
+create policy "open" on conversations for all using (true) with check (true);
+create policy "open" on patterns for all using (true) with check (true);`;
+
+  return `
+  <div style="max-width:680px">
+
+    <!-- Cloud Storage -->
+    <div class="card mb14">
+      <p class="card-title mb4">Cloud storage</p>
+      <p class="card-sub">Persist bot projects, conversations, and extracted patterns. Uses Supabase (free tier — supabase.com).</p>
+
+      <div class="fg">
+        <label class="fl">Supabase project URL</label>
+        <input class="fi" id="sb-url" placeholder="https://xxxxxxxxxxxx.supabase.co"
+          value="${S.db.url}" oninput="S.db.url=this.value">
+      </div>
+      <div class="fg">
+        <label class="fl">Supabase anon key <span class="text-subtle">(safe to expose — RLS protects data)</span></label>
+        <input class="fi" id="sb-key" type="password" placeholder="eyJhbGciOiJIUzI1NiIs…"
+          value="${S.db.anonKey}" oninput="S.db.anonKey=this.value">
+      </div>
+      <div class="flex items-center gap8">
+        <button class="btn btn-secondary btn-sm" onclick="dbTest()">Test connection</button>
+        <span>${dbStatus}</span>
+        ${S.db.connected ? `<button class="btn btn-ghost btn-sm" onclick="dbLoadBots()" style="margin-left:auto">Reload bots</button>` : ''}
+      </div>
+      <div class="hr"></div>
+      <p style="font-size:11px;font-weight:600;color:#374151;margin-bottom:8px">Schema setup — run once in Supabase SQL Editor</p>
+      <div style="position:relative">
+        <textarea class="prompt-preview" readonly rows="6">${schemaSql}</textarea>
+        <button class="btn btn-ghost btn-xs" style="position:absolute;top:8px;right:8px"
+          onclick="navigator.clipboard?.writeText(document.querySelector('.prompt-preview').value)">Copy SQL</button>
+      </div>
+      <p style="font-size:10px;color:#9ca3af;margin-top:6px">Or run the full schema from <code>deploy/supabase-schema.sql</code> in the repo.</p>
+    </div>
+
+    <!-- AI / LLM -->
+    <div class="card mb14">
+      <p class="card-title mb4">AI — LLM connection</p>
+      <p class="card-sub">Power Coco with a real language model. Key stored in localStorage, cleared on browser data wipe.</p>
+
+      <div class="fg">
+        <label class="fl">Provider</label>
+        <div class="flex gap6">
+          <button class="btn btn-sm ${S.llm.provider==='gemini'?'btn-primary':'btn-ghost'}"
+            onclick="S.llm.provider='gemini';saveLlmConfig();render()">Gemini 2.0 Flash</button>
+          <button class="btn btn-sm ${S.llm.provider==='claude'?'btn-primary':'btn-ghost'}"
+            onclick="S.llm.provider='claude';saveLlmConfig();render()">Claude 3.5 Haiku</button>
+          ${S.llm.provider ? `<button class="btn btn-sm btn-ghost" onclick="S.llm.provider=null;S.llm.enabled=false;saveLlmConfig();render()">Clear</button>` : ''}
+        </div>
+      </div>
+
+      ${S.llm.provider ? `
+      <div class="fg">
+        <label class="fl">${S.llm.provider==='gemini'?'Gemini API key (Google AI Studio)':'Anthropic API key'}</label>
+        <input class="fi" type="password"
+          placeholder="${S.llm.provider==='gemini'?'AIzaSy…':'sk-ant-api03-…'}"
+          value="${S.llm.apiKey}"
+          oninput="S.llm.apiKey=this.value;saveLlmConfig()">
+        <div style="margin-top:5px;font-size:10px;color:#9ca3af">
+          ${S.llm.provider==='gemini'
+            ? 'Get free key at <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#2255e8">aistudio.google.com/apikey</a>'
+            : 'Get key at <a href="https://console.anthropic.com" target="_blank" style="color:#2255e8">console.anthropic.com</a>'}
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">
+          Proxy URL <span class="text-subtle">(optional — Cloudflare Worker or Cloudways PHP)</span>
+        </label>
+        <input class="fi"
+          placeholder="https://botstudio-claude-proxy.your-account.workers.dev"
+          value="${S.llm.proxyUrl}"
+          oninput="S.llm.proxyUrl=this.value;saveLlmConfig()">
+        ${proxyHint}
+      </div>
+      <div class="flex items-center gap8">
+        <label class="toggle"><input type="checkbox" ${S.llm.enabled?'checked':''}
+          onchange="S.llm.enabled=this.checked;saveLlmConfig();render()"><span class="toggle-slider"></span></label>
+        <span style="font-size:12px">Enable AI responses in Preview</span>
+        ${S.llm.enabled && S.llm.apiKey ? `<span class="badge badge-green" style="margin-left:4px">● Active</span>` : ''}
+      </div>
+      ` : ''}
+    </div>
+
+    <!-- Proxy deployment -->
+    <div class="card mb14">
+      <p class="card-title mb4">Proxy deployment</p>
+      <p class="card-sub">For production, your API key should never reach the browser. Deploy one of these — both are in the <code>deploy/</code> folder of the repo.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="border:1.5px solid #e0e3ef;border-radius:10px;padding:14px">
+          <div style="font-size:18px;margin-bottom:8px">⚡</div>
+          <p style="font-size:13px;font-weight:600;margin-bottom:4px">Cloudflare Worker</p>
+          <p style="font-size:11px;color:#6b7280;margin-bottom:10px;line-height:1.5">Free · 100k req/day · Global CDN · <1ms cold start. No server needed.</p>
+          <code style="font-size:10px;background:#f4f5f9;padding:6px 8px;border-radius:6px;display:block;margin-bottom:10px">npx wrangler deploy deploy/cloudflare-worker.js<br>wrangler secret put ANTHROPIC_API_KEY</code>
+          <a href="https://developers.cloudflare.com/workers/" target="_blank" class="btn btn-ghost btn-xs w100">Cloudflare docs →</a>
+        </div>
+        <div style="border:1.5px solid #e0e3ef;border-radius:10px;padding:14px">
+          <div style="font-size:18px;margin-bottom:8px">🐘</div>
+          <p style="font-size:13px;font-weight:600;margin-bottom:4px">PHP on Cloudways</p>
+          <p style="font-size:11px;color:#6b7280;margin-bottom:10px;line-height:1.5">Upload to your existing Cloudways server via SFTP. Uses server-side cURL.</p>
+          <code style="font-size:10px;background:#f4f5f9;padding:6px 8px;border-radius:6px;display:block;margin-bottom:10px">sftp deploy/claude-proxy.php<br>→ /var/www/html/proxy.php<br>Set ANTHROPIC_API_KEY in php.ini</code>
+          <button class="btn btn-ghost btn-xs w100" onclick="navigator.clipboard?.writeText('sftp deploy/claude-proxy.php /var/www/html/')">Copy deploy command</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- What gets stored -->
+    <div class="card">
+      <p class="card-title mb4">What gets stored where</p>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr>
+          <th style="text-align:left;padding:7px 10px;font-size:10px;font-weight:600;text-transform:uppercase;color:#9ca3af;border-bottom:1.5px solid #e0e3ef">Data</th>
+          <th style="text-align:left;padding:7px 10px;font-size:10px;font-weight:600;text-transform:uppercase;color:#9ca3af;border-bottom:1.5px solid #e0e3ef">Storage</th>
+          <th style="text-align:left;padding:7px 10px;font-size:10px;font-weight:600;text-transform:uppercase;color:#9ca3af;border-bottom:1.5px solid #e0e3ef">Persists</th>
+        </tr></thead>
+        <tbody>
+          ${[
+            ['Bot projects (CIG, config)','Supabase <code>bots</code>','Forever, across devices'],
+            ['Conversation logs','Supabase <code>conversations</code>','Forever — feeds pattern lib'],
+            ['Extracted patterns','Supabase <code>patterns</code>','Forever — template library'],
+            ['API keys (LLM)','localStorage','Until browser data cleared'],
+            ['Supabase credentials','localStorage','Until browser data cleared'],
+            ['Active conversation','In-memory (S.emuMessages)','Current tab only'],
+            ['KB uploads (prototype)','In-memory (S.kbRequirements)','Current tab — backend needed'],
+          ].map(([d,s,p])=>`<tr>
+            <td style="padding:8px 10px;border-bottom:1px solid #f0f2f7;color:#374151">${d}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #f0f2f7;color:#6b7280;font-size:11px">${s}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #f0f2f7;color:#9ca3af;font-size:11px">${p}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+/* ===============================================================================
    CHART UTILITIES
    =============================================================================== */
 function drawSparkline(id, data, color) {
@@ -3366,6 +3662,10 @@ function init() {
     document.removeEventListener('mousemove', onFlowMove);
     document.removeEventListener('mouseup', onFlowUp);
   });
+  /* if Supabase is pre-configured, test + load bots in background */
+  if (S.db.url && S.db.anonKey) {
+    dbTest();
+  }
 }
 
 // Also catch any uncaught errors
