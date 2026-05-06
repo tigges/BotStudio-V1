@@ -956,15 +956,20 @@ function topbarIntegrations() {
 }
 
 function topbarEmulator() {
+  const ctx = emuCtx();
+  const botLabel = ctx.isHair ? `${ctx.avatar} ${ctx.name} · Yuzu Hair & Beauty` : 'Support Bot';
+  const modeLabel = (S.llm.enabled && S.llm.provider)
+    ? `🤖 ${S.llm.provider === 'gemini' ? 'Gemini' : 'Claude'}`
+    : '⌨️ Keywords';
   return `
-    <span class="tb-title">Emulator</span>
+    <span class="tb-title">Preview</span>
     <span class="tb-divider"></span>
-    <select class="fi-inline fs" style="width:160px">
-      ${S.bots.map(b => `<option>${b.name}</option>`).join('')}
-    </select>
+    <span class="text-muted text-sm">${botLabel}</span>
+    <span class="tb-divider"></span>
+    <span style="font-size:11px;color:${S.llm.enabled&&S.llm.provider?'#10b981':'#9ca3af'}">${modeLabel}</span>
     <div class="tb-actions">
-      <button class="btn btn-ghost btn-sm" onclick="resetEmu()">Reset conversation</button>
-      <button class="btn btn-ghost btn-sm">View debug log</button>
+      <button class="btn btn-ghost btn-sm" onclick="resetEmu()">Reset</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleLlmSettings()">AI settings</button>
     </div>`;
 }
 
@@ -2276,7 +2281,7 @@ const COCO_RESPONSES = [
     reply: `Bye! Looking forward to seeing you at Yuzu Hair & Beauty. Have a great day! 🍋` },
 
   /* ── multi-service combo + combined quote ── */
-  { pattern: /colou?r.*cut|cut.*colou?r|highlight.*cut|cut.*highlight|colour.*style|full head.*wash|wash.*cut.*colou?r|col.*and.*cut|cut.*and.*col/i,
+  { pattern: /colou?r(?:ing)?.*cut|cut.*colou?r(?:ing)?|highlight.*cut|cut.*highlight|colou?r.*style|full head.*wash|wash.*cut.*colou?r(?:ing)?|col.*and.*cut|cut.*and.*col/i,
     intent:'book_appointment', conf:97, node:'Book appointment',
     reply: '__COMBO__', chips:[] },
 
@@ -2315,7 +2320,7 @@ const COCO_RESPONSES = [
     chips:['Check kids slots','Book teen appointment'] },
 
   /* colour */
-  { pattern: /\bcolou?r\b|full head|roots|in.between|illumina|\btint\b/i,
+  { pattern: /colou?r(?:ing|s|ed|s)?\b|full head|roots|in.between|illumina|\btint\b/i,
     intent:'price_inquiry', conf:91, node:'Price inquiry',
     reply: `Colour prices at Yuzu:\n\n<strong>Senior Stylist</strong>\n🎨 Full Head — <strong>£101</strong>\n🌿 Roots — <strong>£88</strong>\n🔄 In-between Full Head — <strong>£124</strong>\n🔄 In-between Roots — <strong>£111</strong>\n✨ Illumina Colouring — <strong>£133</strong>\n\n<strong>Next Gen Stylist</strong>\n🎨 Full Head — <strong>£87</strong>\n🌿 Roots — <strong>£75</strong>\n🔄 In-between Full Head — <strong>£101</strong>\n🔄 In-between Roots — <strong>£88</strong>\n\nToner +£38 · Blending +£41 if needed. Want to book?`,
     chips:['Book colour','Highlights & balayage','Root package'] },
@@ -2332,8 +2337,8 @@ const COCO_RESPONSES = [
     reply: `Hair treatments at Yuzu:\n\n🌿 <strong>Nashi</strong>\n• Filler Express — <strong>£33</strong>\n• Filler 1,2,3 Intense Moisture — <strong>£46</strong>\n\n💆 <strong>K2.0 Keratin</strong>\n• Short — <strong>£41</strong> · Medium — <strong>£52</strong>\n• Long — <strong>£64</strong> · Extra long — <strong>£75</strong>\n\n✨ <strong>Aura Smoothing</strong> (3–4 months)\n• Short — <strong>£117–165</strong> · Above shoulder — <strong>£228</strong>\n• Below shoulder — <strong>£294</strong> · Long — <strong>£357</strong>\n<em>Includes maintenance shampoo 200ml + conditioner 200ml</em>`,
     chips:['Book a treatment','4–6 months option','See all prices'] },
 
-  /* packages */
-  { pattern: /package|deal|4 blow|4 root|bundle|offer\b|save/i,
+  /* packages / offers */
+  { pattern: /package|deal|4 blow|4 root|bundle|offer|special|promot|discount|saving|value/i,
     intent:'price_inquiry', conf:87, node:'Price inquiry',
     reply: `Yuzu packages:\n\n💨 <strong>4 Blowdrys — £156</strong> (valid 6 months)\n£39 each vs £58/£41 walk-in · Saves up to £76\nNo cuts/extensions · No-show = 1 deducted · Non-refundable\n\n🌿 <strong>4 Roots for Price of 3 — £264</strong> (valid 16 weeks)\nAll 4 booked upfront · Upgrade to full head +£10 on day\nNon-refundable\n\nWant to grab one?`,
     chips:['Blowdry package','Roots package','Book single appointment'] },
@@ -2417,12 +2422,25 @@ function emuReply(txt) {
   const ctx = emuCtx();
   if (!ctx.isHair) return { text: GENERIC_RESPONSES[Math.floor(Math.random() * GENERIC_RESPONSES.length)], intent:'general', conf:72, node:'FAQ Reply', chips:[] };
 
-  /* update session context from this message */
+  /* update session context */
   const g = detectGender(txt); if (g) emuCtx$.gender = g;
   const t = detectTier(txt);   if (t) emuCtx$.tier   = t;
 
   const lower = txt.toLowerCase();
-  const match = COCO_RESPONSES.find(r => r.pattern.test(lower));
+
+  /* strip common conversational prefixes so patterns see the topic, not the preamble
+     e.g. "I would like to check on your coloring offers" → "coloring offers"
+          "can you tell me about highlights"              → "highlights"          */
+  const stripped = lower
+    .replace(/^(i would like to|i'd like to|i want to|i need to|i need|can i|could i|may i|please|can you|could you|would you|do you)\s+/,'')
+    .replace(/^(check on|check out|find out about|ask about|tell me about|know about|learn about|hear about|see|get|look at|look into|enquire about|enquire)\s+/,'')
+    .replace(/^(what are|what is|what's|whats|show me|give me|have you got|have you|do you have|you got)\s+/,'')
+    .replace(/^(your|the|a|an|some|any)\s+/,'')
+    .trim();
+
+  /* match against original first, then stripped if no match */
+  const match = COCO_RESPONSES.find(r => r.pattern.test(lower))
+             || (stripped !== lower && COCO_RESPONSES.find(r => r.pattern.test(stripped)));
 
   if (match) {
     /* handle dynamic reply tokens */
@@ -2739,13 +2757,16 @@ function emuDebugHtml(ctx) {
 
 function emuMsgHtml(m, ctx) {
   const isBot = m.role === 'bot';
+  /* bubble wrapper: constrain to container width minus avatar so short
+     messages like "hi coco" never get squeezed into a narrow column    */
+  const wrapStyle = `max-width:calc(100% - 42px);min-width:0`;
   return `<div class="msg ${m.role}">
-    ${isBot ? `<div class="msg-avatar" style="background:${ctx.avatarBg};color:#1a1d2e;font-size:14px">${ctx.avatar}</div>` : ''}
-    <div>
-      <div class="msg-bubble">${m.text}</div>
-      ${m.chips && m.chips.length ? `<div class="script-chips" style="margin-top:5px">${m.chips.map(c=>`<span class="script-chip" onclick="emuChipClick('${c.replace(/'/g,"\\'")}')">${c}</span>`).join('')}</div>` : ''}
+    ${isBot ? `<div class="msg-avatar" style="background:${ctx.avatarBg};color:#1a1d2e;font-size:14px;flex-shrink:0">${ctx.avatar}</div>` : ''}
+    <div style="${wrapStyle}">
+      <div class="msg-bubble" style="width:fit-content;${isBot?'':'margin-left:auto'}">${m.text}</div>
+      ${m.chips && m.chips.length ? `<div class="script-chips" style="margin-top:5px;${isBot?'':'justify-content:flex-end'}">${m.chips.map(c=>`<span class="script-chip" onclick="emuChipClick('${c.replace(/'/g,"\\'")}')">${c}</span>`).join('')}</div>` : ''}
     </div>
-    ${!isBot ? `<div class="msg-avatar" style="background:#1a1d2e;color:#fff;font-size:11px">U</div>` : ''}
+    ${!isBot ? `<div class="msg-avatar" style="background:#1a1d2e;color:#fff;font-size:11px;flex-shrink:0">U</div>` : ''}
   </div>`;
 }
 
