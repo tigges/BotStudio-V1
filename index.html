@@ -722,13 +722,87 @@ const HAIR_SALON_CIG = {
   ]
 };
 
+/* ===============================================================================
+   CIG TEMPLATE — RESTAURANT
+   =============================================================================== */
+const RESTAURANT_CIG = {
+  name: 'Restaurant Booking',
+  industry: 'restaurant',
+  intents: [
+    { id:'greet',     label:'Greet',              kind:'entry',   color:'#6b7280', x:30,  y:150, w:90,  h:42, kb:null,       api:null,         desc:'Welcome and present main options' },
+    { id:'menu',      label:'Browse menu',         kind:'qa',      color:'#2255e8', x:170, y:90,  w:130, h:42, kb:'menu',      api:null,         desc:'Show dishes, dietary options, allergens from KB' },
+    { id:'reserve',   label:'Book a table',        kind:'action',  color:'#8b5cf6', x:360, y:60,  w:140, h:42, kb:null,        api:'calendar',   desc:'Collect covers, date, time, name' },
+    { id:'noTable',   label:'No availability',     kind:'branch',  color:'#f59e0b', x:560, y:150, w:145, h:42, kb:null,        api:null,         desc:'Suggest alternatives or waitlist' },
+    { id:'confirm',   label:'Confirm reservation', kind:'action',  color:'#2255e8', x:560, y:50,  w:155, h:42, kb:null,        api:'email',      desc:'Send confirmation with ref + reminder' },
+    { id:'openqa',    label:'Open Q&A',            kind:'qa',      color:'#9ca3af', x:170, y:230, w:110, h:42, kb:'faq',       api:null,         desc:'Parking, allergies, special occasions, hours' },
+    { id:'escalate',  label:'Escalate to host',    kind:'handoff', color:'#ef4444', x:360, y:300, w:140, h:42, kb:null,        api:'notify',     desc:'Notify manager for special requests or complaints' },
+    { id:'end',       label:'End',                 kind:'end',     color:'#374151', x:760, y:110, w:75,  h:42, kb:null,        api:null,         desc:'Close conversation' },
+  ],
+  edges: [
+    { from:'greet',   to:'menu',    label:'' },
+    { from:'greet',   to:'reserve', label:'book!' },
+    { from:'greet',   to:'openqa',  label:'' },
+    { from:'menu',    to:'reserve', label:'book!' },
+    { from:'reserve', to:'confirm', label:'available' },
+    { from:'reserve', to:'noTable', label:'full' },
+    { from:'confirm', to:'end',     label:'' },
+    { from:'noTable', to:'end',     label:'' },
+    { from:'openqa',  to:'escalate',label:"can't help" },
+    { from:'escalate',to:'end',     label:'' },
+  ],
+  requirements: [
+    { id:'menu-kb',    label:'Menu + dishes',        icon:'🍽', type:'kb',  required:true,  status:'pending', desc:'Full menu, prices, allergens, dietary options', used:['menu']               },
+    { id:'calendar',   label:'Booking calendar',     icon:'📅', type:'api', required:true,  status:'pending', desc:'Read availability, write reservations',         used:['reserve','confirm']  },
+    { id:'email',      label:'Confirmation email',   icon:'📧', type:'api', required:false, status:'pending', desc:'Send booking confirmations to guests',           used:['confirm']            },
+    { id:'faq',        label:'FAQ / policies',       icon:'📝', type:'kb',  required:false, status:'pending', desc:'Parking, dress code, cancellations, hours',      used:['openqa']             },
+  ]
+};
+
+/* ===============================================================================
+   CIG TEMPLATE — DENTAL / CLINIC
+   =============================================================================== */
+const CLINIC_CIG = {
+  name: 'Dental & Clinic Booking',
+  industry: 'clinic',
+  intents: [
+    { id:'greet',      label:'Greet',              kind:'entry',   color:'#6b7280', x:30,  y:150, w:90,  h:42, kb:null,        api:null,         desc:'Welcome patient, new vs returning' },
+    { id:'patientType',label:'New or returning?',  kind:'branch',  color:'#f59e0b', x:170, y:150, w:145, h:42, kb:null,        api:null,         desc:'Route based on patient type' },
+    { id:'treatments', label:'Browse treatments',  kind:'qa',      color:'#2255e8', x:370, y:80,  w:145, h:42, kb:'treatments', api:null,         desc:'Explain procedures, costs, duration from KB' },
+    { id:'book',       label:'Book appointment',   kind:'action',  color:'#8b5cf6', x:570, y:60,  w:150, h:42, kb:null,         api:'calendar',   desc:'Collect treatment, date, patient name, DOB' },
+    { id:'insurance',  label:'Insurance query',    kind:'qa',      color:'#10b981', x:370, y:200, w:140, h:42, kb:'insurance',  api:null,         desc:'Answer insurance and NHS vs private questions' },
+    { id:'confirm',    label:'Confirm booking',    kind:'action',  color:'#2255e8', x:780, y:60,  w:130, h:42, kb:null,         api:'email',      desc:'Send appointment confirmation + forms link' },
+    { id:'openqa',     label:'Open Q&A',           kind:'qa',      color:'#9ca3af', x:170, y:270, w:110, h:42, kb:'faq',        api:null,         desc:'Parking, anxiety support, directions, hours' },
+    { id:'escalate',   label:'Escalate to reception',kind:'handoff',color:'#ef4444',x:370,y:340, w:185, h:42, kb:null,         api:'notify',     desc:'Emergency, complex insurance, complaints' },
+    { id:'end',        label:'End',                kind:'end',     color:'#374151', x:980, y:140, w:75,  h:42, kb:null,         api:null,         desc:'Close and invite review' },
+  ],
+  edges: [
+    { from:'greet',       to:'patientType', label:'' },
+    { from:'greet',       to:'openqa',      label:'' },
+    { from:'patientType', to:'treatments',  label:'new' },
+    { from:'patientType', to:'book',        label:'returning' },
+    { from:'treatments',  to:'book',        label:'book!' },
+    { from:'treatments',  to:'insurance',   label:'cost?' },
+    { from:'insurance',   to:'book',        label:'book!' },
+    { from:'book',        to:'confirm',     label:'slot ok' },
+    { from:'confirm',     to:'end',         label:'' },
+    { from:'openqa',      to:'escalate',    label:"can't help" },
+    { from:'escalate',    to:'end',         label:'' },
+  ],
+  requirements: [
+    { id:'treatments', label:'Treatment list + prices', icon:'🦷', type:'kb',  required:true,  status:'pending', desc:'All procedures, NHS vs private, duration',       used:['treatments']         },
+    { id:'calendar',   label:'Appointment calendar',   icon:'📅', type:'api', required:true,  status:'pending', desc:'Read availability, write appointments',          used:['book','confirm']     },
+    { id:'email',      label:'Confirmation + forms',   icon:'📧', type:'api', required:false, status:'pending', desc:'Send confirmation and new patient forms link',   used:['confirm']            },
+    { id:'insurance',  label:'Insurance guide',        icon:'📝', type:'kb',  required:false, status:'pending', desc:'NHS bands, accepted insurers, payment plans',    used:['insurance','openqa'] },
+  ]
+};
+
 const TEMPLATES = [
-  { id:'hair-salon',  icon:'💈', name:'Hair salon',     tag:'Booking + FAQ',   cig: HAIR_SALON_CIG },
-  { id:'restaurant',  icon:'🍽', name:'Restaurant',     tag:'Reservations',    cig: null },
-  { id:'clinic',      icon:'🏥', name:'Clinic',         tag:'Appointments',    cig: null },
-  { id:'gym',         icon:'🏋', name:'Gym / fitness',  tag:'Classes + plans', cig: null },
-  { id:'tutor',       icon:'📚', name:'Tutor',          tag:'Booking + info',  cig: null },
-  { id:'custom',      icon:'✨', name:'Custom',         tag:'Describe yours',  cig: null },
+  { id:'hair-salon',  icon:'💈', name:'Hair salon',     tag:'Booking + FAQ',      cig: HAIR_SALON_CIG  },
+  { id:'restaurant',  icon:'🍽', name:'Restaurant',     tag:'Reservations + menu', cig: RESTAURANT_CIG  },
+  { id:'clinic',      icon:'🦷', name:'Clinic / dental',tag:'Appointments + info', cig: CLINIC_CIG      },
+  { id:'gym',         icon:'🏋', name:'Gym / fitness',  tag:'Classes + plans',    cig: null },
+  { id:'tutor',       icon:'📚', name:'Tutor',          tag:'Booking + info',     cig: null },
+  { id:'custom',      icon:'✨', name:'Custom',         tag:'Describe yours',     cig: null },
 ];
 
 const DESIGN_CHAT_SCRIPT = [
@@ -828,6 +902,7 @@ function renderTopbar() {
     'design-input': topbarDesignInput,
     'cig-review':   topbarCigReview,
     'kb-gather':    topbarKbGather,
+    'publish':      topbarPublish,
     'settings':     topbarSettings,
   };
   tb.innerHTML = (map[S.screen] || (() => `<span class="tb-title">${S.screen}</span>`))();
@@ -848,6 +923,7 @@ function renderContent() {
     'design-input': screenDesignInput,
     'cig-review':   screenCigReview,
     'kb-gather':    screenKbGather,
+    'publish':      screenPublish,
     'settings':     screenSettings,
   };
   c.innerHTML = (map[S.screen] || (() => `<p class="text-muted">Coming soon.</p>`))();
@@ -1052,8 +1128,107 @@ function topbarCigReview() {
         ${S.db.syncing ? '⏳ Saving…' : '☁ Save to Supabase'}
       </button>` : `<button class="btn btn-ghost btn-sm" onclick="navigate('settings')" title="Connect Supabase to save">☁ Save project</button>`}
       <button class="btn btn-secondary btn-sm" onclick="navigate('kb-gather')">Gather knowledge →</button>
-      <button class="btn btn-primary btn-sm" onclick="navigate('emulator')">${ICO.emulator} Preview bot</button>
+      <button class="btn btn-primary btn-sm" onclick="navigate('publish')">${ICO.arrow_r} Publish</button>
     </div>`;
+}
+
+function topbarPublish() {
+  return `${ICO.arrow_r}
+    <span class="tb-title">Publish</span>
+    <span class="tb-divider"></span>
+    <span class="text-muted text-sm">${S.cigData ? S.cigData.name : 'No bot'}</span>
+    <div class="tb-actions">
+      <button class="btn btn-ghost btn-sm" onclick="navigate('kb-gather')">← Back</button>
+    </div>`;
+}
+
+function screenPublish() {
+  if (!S.cigData) return `<div class="card" style="text-align:center;padding:40px">
+    <p class="text-muted mb14">Design your bot first.</p>
+    <button class="btn btn-primary" onclick="navigate('design-input')">Design your bot →</button>
+  </div>`;
+
+  const name     = S.botSetupData.displayName || 'MyBot';
+  const slug     = name.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,10);
+  const embedKey = S.publishKey || (S.publishKey = `${slug}_live_${Math.random().toString(36).slice(2,10)}`);
+  const apiBase  = 'https://botstudio-api.railway.app';
+  const shareUrl = `${location.origin}/chat/index.html?k=${embedKey}&name=${encodeURIComponent(name)}&avatar=${encodeURIComponent(S.cigData.industry==='hair-beauty'?'🍋':'🤖')}`;
+  const embedCode = `<script src="${location.origin}/widget/widget.js"\n  data-key="${embedKey}"\n  data-api="${apiBase}"\n  data-name="${name}"\n  data-color="#2255e8"\n  data-avatar="${S.cigData.industry==='hair-beauty'?'🍋':'🤖'}"\n  data-delay="5">\n<\/script>`;
+
+  return `
+  <div style="max-width:640px">
+    <div class="card mb14" style="border-color:#10b981;background:#f0fdf8">
+      <div class="flex items-center gap10 mb10">
+        <div style="font-size:32px">🚀</div>
+        <div><div style="font-size:16px;font-weight:600;color:#065f46">Ready to publish</div>
+        <div style="font-size:12px;color:#059669">Bot designed · knowledge gathered · ready to go live</div></div>
+      </div>
+      <div class="flex gap8">
+        <button class="btn btn-green" onclick="finalPublish()">Go live now</button>
+        <button class="btn btn-ghost btn-sm" onclick="navigate('emulator')">Preview first</button>
+      </div>
+    </div>
+
+    <div class="card mb14">
+      <p class="card-title mb4">Embed on your website</p>
+      <p class="card-sub">Paste anywhere in your site's &lt;body&gt; tag. Works on Wix, Squarespace, Shopify, WordPress.</p>
+      <div style="position:relative">
+        <pre class="prompt-preview" style="font-size:11px;white-space:pre-wrap;word-break:break-all;user-select:all">${embedCode}</pre>
+        <button class="btn btn-ghost btn-xs" style="position:absolute;top:8px;right:8px"
+          onclick="navigator.clipboard&&navigator.clipboard.writeText(document.querySelector('.prompt-preview').textContent)">Copy</button>
+      </div>
+    </div>
+
+    <div class="card mb14">
+      <p class="card-title mb4">Direct share link</p>
+      <p class="card-sub">Share on Instagram bio, WhatsApp, Google profile — no website needed.</p>
+      <div class="flex items-center gap8">
+        <input class="fi" value="${shareUrl}" readonly onclick="this.select()" style="flex:1;font-size:11px">
+        <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('${shareUrl}')">Copy</button>
+        <a href="${shareUrl}" target="_blank" class="btn btn-ghost btn-sm">Open →</a>
+      </div>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <p class="card-title mb4">Backend API</p>
+        <p class="card-sub">Required for live conversations, calendar booking, and emails.</p>
+        ${[
+          ['Deploy to Railway', 'railway.toml ready in /api', 'https://railway.app'],
+          ['Deploy to Render', 'node server.js · set env vars', 'https://render.com'],
+          ['Cloudways Node.js', 'Custom app → Node.js → upload /api', '#'],
+        ].map(([label, sub, href]) => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f2f7">
+            <div>
+              <div style="font-size:12px;font-weight:500">${label}</div>
+              <div style="font-size:10px;color:#9ca3af">${sub}</div>
+            </div>
+            <a href="${href}" target="_blank" class="btn btn-ghost btn-xs">Deploy →</a>
+          </div>`).join('')}
+      </div>
+      <div class="card">
+        <p class="card-title mb4">Environment variables</p>
+        <p class="card-sub">Set these in your deployment platform.</p>
+        ${[
+          ['ANTHROPIC_API_KEY', 'or GEMINI_API_KEY'],
+          ['SUPABASE_URL', 'your project URL'],
+          ['SUPABASE_SERVICE_KEY', 'service role key'],
+          ['GOOGLE_CLIENT_ID', 'for calendar booking'],
+          ['RESEND_API_KEY', 'for booking emails'],
+          ['JWT_SECRET', 'any 32+ char secret'],
+        ].map(([k,v]) => `
+          <div style="display:flex;align-items:baseline;gap:8px;padding:5px 0;border-bottom:1px solid #f0f2f7;font-size:11px">
+            <code style="background:#f4f5f9;padding:1px 6px;border-radius:4px;color:#2255e8;flex-shrink:0">${k}</code>
+            <span style="color:#9ca3af">${v}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function finalPublish() {
+  if (S.db.connected) dbSaveBot();
+  alert('Bot published! Copy the embed code or share link above to make it live.');
 }
 
 function topbarKbGather() {

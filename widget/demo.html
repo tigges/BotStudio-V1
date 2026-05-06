@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yuzu Hair & Beauty — Book Online</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #fafaf8; color: #1a1d2e; }
+  nav { background: #1a1d2e; padding: 16px 40px; display: flex; align-items: center; justify-content: space-between; }
+  nav .logo { font-size: 20px; font-weight: 600; color: #fff; letter-spacing: -.3px; }
+  nav .logo span { color: #fef9c3; }
+  nav a { color: rgba(255,255,255,.7); text-decoration: none; font-size: 13px; margin-left: 24px; }
+  nav a:hover { color: #fff; }
+  .hero { display: grid; grid-template-columns: 1fr 1fr; min-height: 70vh; }
+  .hero-text { padding: 80px 40px 80px 60px; display: flex; flex-direction: column; justify-content: center; }
+  .hero-text h1 { font-size: 42px; font-weight: 600; line-height: 1.15; margin-bottom: 16px; }
+  .hero-text p { font-size: 16px; color: #6b7280; margin-bottom: 28px; line-height: 1.6; max-width: 420px; }
+  .hero-text .cta { display: inline-block; background: #1a1d2e; color: #fff; padding: 13px 24px; border-radius: 10px; font-size: 14px; font-weight: 500; text-decoration: none; margin-right: 12px; }
+  .hero-text .cta.secondary { background: transparent; color: #1a1d2e; border: 1.5px solid #1a1d2e; }
+  .hero-img { background: #fef9c3; display: flex; align-items: center; justify-content: center; font-size: 140px; }
+  .services { padding: 64px 60px; }
+  .services h2 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+  .services .sub { color: #6b7280; margin-bottom: 32px; }
+  .service-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+  .service-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; }
+  .service-card .icon { font-size: 28px; margin-bottom: 10px; }
+  .service-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .service-card p { font-size: 12px; color: #6b7280; margin-bottom: 8px; }
+  .service-card .price { font-size: 16px; font-weight: 700; color: #1a1d2e; }
+  .service-card .price span { font-size: 11px; color: #9ca3af; font-weight: 400; }
+  .info-bar { background: #1a1d2e; color: #fff; padding: 20px 60px; display: flex; gap: 40px; flex-wrap: wrap; }
+  .info-bar div { font-size: 13px; }
+  .info-bar strong { display: block; font-size: 14px; margin-bottom: 3px; }
+  footer { padding: 24px 60px; text-align: center; font-size: 12px; color: #9ca3af; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">yuzu <span>hair & beauty</span></div>
+  <div>
+    <a href="#">Services</a>
+    <a href="#">About</a>
+    <a href="#">Gallery</a>
+    <a href="#">Contact</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-text">
+    <h1>Premium hair & beauty<br>in Ealing, London</h1>
+    <p>Expert colour, cuts, and treatments by our Senior and Next Gen Stylists. Book instantly — Coco, our AI assistant, is available 24/7.</p>
+    <div>
+      <a href="#" class="cta" onclick="openCoco()">Book with Coco →</a>
+      <a href="#services" class="cta secondary">See services</a>
+    </div>
+  </div>
+  <div class="hero-img">🍋</div>
+</section>
+
+<section class="services" id="services">
+  <h2>Our services</h2>
+  <p class="sub">Two stylist levels — Senior and Next Gen — for every budget.</p>
+  <div class="service-grid">
+    <div class="service-card"><div class="icon">✂️</div><h3>Ladies Cut & Style</h3><p>Wash, precision cut, blow-dry finish</p><div class="price">from £58 <span>/ 60 min</span></div></div>
+    <div class="service-card"><div class="icon">✂️</div><h3>Gents Cut & Style</h3><p>Professional wash, cut, and finish</p><div class="price">£58 <span>/ 45 min</span></div></div>
+    <div class="service-card"><div class="icon">🎨</div><h3>Full Head Colour</h3><p>All-over colour with toner if needed</p><div class="price">from £87 <span>/ 2 hrs</span></div></div>
+    <div class="service-card"><div class="icon">✨</div><h3>Highlights & Balayage</h3><p>Full, half, T-section or foiliage</p><div class="price">from £64 <span>/ 2.5 hrs</span></div></div>
+    <div class="service-card"><div class="icon">💆</div><h3>Hair Treatments</h3><p>Nashi, K2.0 Keratin, Aura Smoothing</p><div class="price">from £33</div></div>
+    <div class="service-card"><div class="icon">👶</div><h3>Kids & Teens</h3><p>Friendly cuts for ages 12 & under</p><div class="price">from £23 <span>/ 30 min</span></div></div>
+  </div>
+</section>
+
+<div class="info-bar">
+  <div><strong>📍 Location</strong>5 Dickens Yard, Ealing, W5 2TD</div>
+  <div><strong>🕐 Hours</strong>Tue–Fri 10am–8pm · Sat 9am–6pm</div>
+  <div><strong>🚇 Transport</strong>Ealing Broadway — 5 min walk</div>
+  <div><strong>💬 Book online</strong>Chat with Coco, our AI assistant</div>
+</div>
+
+<footer>© 2026 Yuzu Hair & Beauty · Ealing, London ·
+  <a href="https://botstudio.io" style="color:#9ca3af">Powered by BotStudio</a>
+</footer>
+
+<!-- BotStudio widget — swap data-key and data-api for your live values -->
+<script src="./widget.js"
+  data-key="yuzu_live_demo"
+  data-api="http://localhost:3001"
+  data-name="Coco"
+  data-color="#2255e8"
+  data-avatar="🍋"
+  data-delay="5"
+  data-position="bottom-right">
+</script>
+
+<script>
+  function openCoco() {
+    const bubble = document.querySelector('#botstudio-widget').shadowRoot.getElementById('bs-bubble');
+    if (bubble) bubble.click();
+  }
+</script>
+
+</body>
+</html>
