@@ -940,7 +940,7 @@ function screenWizard() {
         ].map(([lbl,step]) => {
           const done = step >= 0 ? S.wizardDone[step] : false;
           return `<div class="check-item">
-            <div class="check-ico ${done?'done'}">${done ? ICO.check : ''}</div>
+            <div class="check-ico ${done ? 'done' : ''}">${done ? ICO.check : ''}</div>
             <span style="${done ? 'color:#6b7280;text-decoration:line-through' : ''}">${lbl}</span>
           </div>`;
         }).join('')}
