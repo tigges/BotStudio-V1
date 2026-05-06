@@ -1269,16 +1269,29 @@ function screenKbGather() {
         <div class="kg-desc">${r.desc}</div>
         <div class="kg-used">Enables: ${r.used.map(u => `<span class="badge badge-${r.type==='kb'?'blue':'purple'}" style="font-size:9px;margin-right:3px">${u}</span>`).join('')}</div>
         ${isDone
-          ? `<div class="kg-actions"><span class="kg-done-badge">✓ Connected &amp; ready</span><button class="btn btn-ghost btn-xs" onclick="reqReset('${r.id}')">Remove</button></div>`
+          ? `<div>
+              ${r._filename ? `<div style="font-size:11px;color:#059669;margin-left:42px;margin-bottom:6px">📄 ${r._filename}</div>` : ''}
+              ${r._parsed && r._parsed.length ? `<div style="margin-left:42px;margin-bottom:8px;padding:9px 12px;background:#f0fdf8;border-radius:8px;font-size:11px;color:#374151">
+                <strong style="color:#059669">✓ ${r._parsed.length} items detected</strong><br>
+                ${r._parsed.slice(0,5).map(p=>`${p.name} — £${p.price}`).join('<br>')}
+                ${r._parsed.length > 5 ? `<br><em>…and ${r._parsed.length-5} more</em>` : ''}
+              </div>` : r.type==='kb' && !r._parsed ? `<div style="margin-left:42px;margin-bottom:8px;font-size:11px;color:#059669">✓ Content processed — ${r.id==='price-list'?'22 price items':'12 FAQ items'} indexed</div>` : ''}
+              <div class="kg-actions"><span class="kg-done-badge">✓ Ready</span><button class="btn btn-ghost btn-xs" onclick="reqReset('${r.id}')">Remove</button></div>
+            </div>`
           : r.type === 'kb'
-            ? `<div class="kg-upload-area" onclick="reqSimulateUpload('${r.id}')">
+            ? `<label class="kg-upload-area" for="kgfile-${r.id}" style="cursor:pointer;display:block">
                 <div style="font-size:20px;margin-bottom:5px">📎</div>
-                <div style="font-size:12px;font-weight:500;color:#374151">Click to upload PDF, or paste text</div>
-                <div style="font-size:10px;color:#9ca3af;margin-top:3px">PDF · TXT · URL supported</div>
-              </div>
+                <div style="font-size:12px;font-weight:500;color:#374151">Drop file here or click to browse</div>
+                <div style="font-size:10px;color:#9ca3af;margin-top:3px">PDF · TXT · CSV supported</div>
+                <input type="file" id="kgfile-${r.id}" accept=".pdf,.txt,.csv,.doc,.docx"
+                  style="position:absolute;opacity:0;pointer-events:none"
+                  onchange="kgFileSelected('${r.id}',this)">
+              </label>
               <div class="kg-actions">
-                <button class="btn btn-secondary btn-sm" onclick="reqSimulateUpload('${r.id}')">Upload file</button>
-                <button class="btn btn-ghost btn-sm" onclick="reqSimulateUpload('${r.id}')">Paste text</button>
+                <label for="kgfile-${r.id}" class="btn btn-secondary btn-sm" style="cursor:pointer">
+                  ${ICO.upload} Upload file
+                </label>
+                <button class="btn btn-ghost btn-sm" onclick="kgPasteText('${r.id}')">Paste text</button>
                 ${!r.required ? `<button class="btn btn-ghost btn-sm text-subtle" onclick="reqSkip('${r.id}')">Skip for now</button>` : ''}
               </div>`
             : `<div class="kg-actions">
@@ -2258,6 +2271,21 @@ const COCO_RESPONSES = [
     intent:'closing', conf:98, node:'End', chips:[],
     reply: `Bye! Looking forward to seeing you at Yuzu Hair & Beauty. Have a great day! 🍋` },
 
+  /* ── multi-service combo + combined quote ── */
+  { pattern: /colou?r.*cut|cut.*colou?r|highlight.*cut|cut.*highlight|colour.*style|full head.*wash|wash.*cut.*colou?r|col.*and.*cut|cut.*and.*col/i,
+    intent:'book_appointment', conf:97, node:'Book appointment',
+    reply: '__COMBO__', chips:[] },
+
+  /* when can I come / availability for a service */
+  { pattern: /when can i|when can we|what time|what day|come for|come in for|come in this|available.*for|slot.*for/i,
+    intent:'book_appointment', conf:93, node:'Book appointment',
+    reply: '__AVAIL__', chips:[] },
+
+  /* explicit senior / next gen tier preference */
+  { pattern: /senior stylist|with senior|by senior|next.?gen stylist|junior stylist/i,
+    intent:'price_inquiry', conf:95, node:'Price inquiry',
+    reply: '__TIER__', chips:[] },
+
   /* services overview */
   { pattern: /what.*offer|what.*service|what.*do\b|your service|menu|tell me.*offer/i,
     intent:'explore_services', conf:96, node:'Explore services',
@@ -2384,14 +2412,54 @@ const GENERIC_RESPONSES = [
 function emuReply(txt) {
   const ctx = emuCtx();
   if (!ctx.isHair) return { text: GENERIC_RESPONSES[Math.floor(Math.random() * GENERIC_RESPONSES.length)], intent:'general', conf:72, node:'FAQ Reply', chips:[] };
+
+  /* update session context from this message */
+  const g = detectGender(txt); if (g) emuCtx$.gender = g;
+  const t = detectTier(txt);   if (t) emuCtx$.tier   = t;
+
   const lower = txt.toLowerCase();
   const match = COCO_RESPONSES.find(r => r.pattern.test(lower));
-  if (match) return { text: match.reply.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>'), intent: match.intent, conf: match.conf, node: match.node, chips: match.chips || [] };
-  /* natural fallback — no scripted openers, just honest and helpful */
+
+  if (match) {
+    /* handle dynamic reply tokens */
+    if (match.reply === '__COMBO__' || match.reply === '__AVAIL__') {
+      const svcs = detectServices(txt);
+      /* if no services detected on AVAIL query, use accumulated context */
+      const useSvcs = svcs.length > 0 ? svcs : emuCtx$.services.length > 0 ? emuCtx$.services : ['full_colour','ladies_cut'];
+      if (svcs.length > 0) emuCtx$.services = svcs;
+      const tier = emuCtx$.tier || detectTier(txt) || 'senior';
+      const gender = emuCtx$.gender || detectGender(txt) || 'female';
+      const { lines, total, durStr } = calcCombo(useSvcs, tier);
+      const tierLabel = tier === 'senior' ? 'Senior Stylist' : 'Next Gen Stylist';
+      const gLabel = gender === 'male' ? 'Gents' : 'Ladies';
+
+      const priceLines = lines.map(l => `• ${l.label} — <strong>£${l.price}</strong>`).join('<br>');
+      const svcNames = lines.map(l => l.label).join(' + ');
+      const reply = `Here's your quote for ${gLabel} — <strong>${tierLabel}</strong>:<br><br>${priceLines}<br><br><strong>Total: £${total}</strong><br><strong>Duration: ~${durStr}</strong><br><br>Available slots this week with enough time:<br>📅 <strong>Thu 8 May</strong> — 10am · 2pm<br>📅 <strong>Fri 9 May</strong> — 10am · 1pm<br>📅 <strong>Sat 10 May</strong> — 9am · 11am<br><br>Which slot works for you?`;
+      return { text: reply, intent:'book_appointment', conf:97, node:'Book appointment',
+        chips:['9am Sat','11am Sat','10am Thu','10am Fri','Different day?'] };
+    }
+
+    if (match.reply === '__TIER__') {
+      const tier = detectTier(txt) || 'senior';
+      emuCtx$.tier = tier;
+      const tierLabel = tier === 'senior' ? 'Senior Stylist' : 'Next Gen Stylist';
+      const gender = emuCtx$.gender || 'female';
+      const cutPrice = tier === 'senior' ? (gender==='male' ? 58 : 87) : 58;
+      const colPrice = tier === 'senior' ? 101 : 87;
+      const reply = `Got it — I'll book you with our <strong>${tierLabel}</strong>.<br><br>With the Senior Stylist for ladies:<br>• Wash, Cut & Style — <strong>£${cutPrice}</strong><br>• Full Head Colour — <strong>£${colPrice}</strong><br><br>Would you like one service or both together?`;
+      return { text: reply, intent:'price_inquiry', conf:95, node:'Price inquiry',
+        chips:['Cut + Colour together','Cut only','Colour only','See all prices'] };
+    }
+
+    return { text: match.reply.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>'), intent: match.intent, conf: match.conf, node: match.node, chips: match.chips || [] };
+  }
+
+  /* natural fallback */
   const fallbacks = [
     { text: `I'm not sure I got that — I can help with services, prices, booking, or anything about Yuzu. What would you like to know?`, chips:['Services & prices','Book appointment','Location & hours'] },
     { text: `I didn't quite catch that. Try asking about our services, prices, or booking — happy to help!`, chips:['What services do you offer?','How do I book?'] },
-    { text: `Hmm, I'm not sure I understood. I can help with bookings, prices, treatments, opening hours and more.`, chips:['Show me services','Book appointment'] },
+    { text: `Not sure I understood — I can help with bookings, prices, treatments, and opening hours.`, chips:['Show me services','Book appointment'] },
   ];
   const f = fallbacks[Math.floor(Math.random() * fallbacks.length)];
   return { text: f.text, intent:'open_qa', conf:52, node:'Open Q&A', chips: f.chips };
@@ -2399,6 +2467,70 @@ function emuReply(txt) {
 
 /* ─── Live debug state ───────────────────────────────────────────────────── */
 const emuDebug = { intent:'greeting', conf:100, node:'Greet', turn:1, startTime: Date.now() };
+/* session context — accumulates across turns within one conversation */
+const emuCtx$ = { gender: null, tier: null, services: [] };
+
+/* Yuzu Senior prices lookup */
+const YUZU_PRICES = {
+  senior: {
+    'ladies_cut': { label:'Ladies Wash, Cut & Style', price:87, duration:60 },
+    'gents_cut':  { label:'Gents Wash, Cut & Style',  price:58, duration:45 },
+    'kids_cut':   { label:'Kids Cut (12 & under)',     price:29, duration:30 },
+    'blowdry':    { label:'Blowdry',                   price:58, duration:40 },
+    'full_colour':{ label:'Full Head Colour',          price:101,duration:120},
+    'roots':      { label:'Roots',                     price:88, duration:90 },
+    'highlights': { label:'Full Head Highlights',      price:150,duration:150},
+    'half_highlights':{ label:'Half Head Highlights',  price:115,duration:120},
+    'toner':      { label:'Toner',                     price:38, duration:20 },
+  },
+  nextgen: {
+    'ladies_cut': { label:'Ladies Wash, Cut & Style', price:58, duration:60 },
+    'kids_cut':   { label:'Kids Cut (12 & under)',     price:23, duration:30 },
+    'blowdry':    { label:'Blowdry',                   price:41, duration:40 },
+    'full_colour':{ label:'Full Head Colour',          price:87, duration:120},
+    'roots':      { label:'Roots',                     price:75, duration:90 },
+    'highlights': { label:'Full Head Highlights',      price:98, duration:150},
+    'half_highlights':{ label:'Half Head Highlights',  price:75, duration:120},
+    'toner':      { label:'Toner',                     price:38, duration:20 },
+  }
+};
+
+function calcCombo(services, tier) {
+  const prices = YUZU_PRICES[tier] || YUZU_PRICES.senior;
+  let total = 0, totalMins = 0, lines = [];
+  services.forEach(s => {
+    const p = prices[s];
+    if (p) { total += p.price; totalMins += p.duration; lines.push({ label: p.label, price: p.price }); }
+  });
+  const hrs = Math.floor(totalMins / 60), mins = totalMins % 60;
+  const durStr = hrs > 0 ? `${hrs}h${mins > 0 ? ' ' + mins + 'min' : ''}` : `${mins} min`;
+  return { lines, total, durStr, totalMins };
+}
+
+function detectTier(txt) {
+  if (/senior/i.test(txt)) return 'senior';
+  if (/next.?gen|junior|ng\b/i.test(txt)) return 'nextgen';
+  return null;
+}
+
+function detectServices(txt) {
+  const svcs = [];
+  if (/full.*head.*col|col.*full.*head|full.*head.*tint|tint.*full/i.test(txt)) svcs.push('full_colour');
+  else if (/\bcolou?r\b(?!.*roots)|\btint\b|dye/i.test(txt) && !/root/i.test(txt)) svcs.push('full_colour');
+  if (/\broo?ts?\b/i.test(txt)) svcs.push('roots');
+  if (/highlight|balayage|foil/i.test(txt)) svcs.push('highlights');
+  if (/\bcut\b|trim/i.test(txt)) {
+    const g = emuCtx$.gender || detectGender(txt);
+    svcs.push(g === 'male' ? 'gents_cut' : 'ladies_cut');
+  }
+  if (/wash.*cut|cut.*wash|cut.*style|style.*cut/i.test(txt) && !svcs.includes('ladies_cut') && !svcs.includes('gents_cut')) {
+    const g = emuCtx$.gender || detectGender(txt);
+    svcs.push(g === 'male' ? 'gents_cut' : 'ladies_cut');
+  }
+  if (/blow.?dry|blowout/i.test(txt) && !svcs.includes('ladies_cut') && !svcs.includes('gents_cut')) svcs.push('blowdry');
+  if (/\btoner\b/i.test(txt)) svcs.push('toner');
+  return svcs;
+}
 
 function emuDebugHtml(ctx) {
   const elapsed = Math.round((Date.now() - emuDebug.startTime) / 1000);
@@ -2529,6 +2661,7 @@ function emuChipClick(txt) { emuSend(txt); }
 function resetEmu() {
   const ctx = emuCtx();
   emuDebug.turn = 1; emuDebug.startTime = Date.now(); emuDebug.intent = 'greeting'; emuDebug.conf = 100; emuDebug.node = 'Greet';
+  emuCtx$.gender = null; emuCtx$.tier = null; emuCtx$.services = [];
   S.emuMessages = [{ role:'bot', text: ctx.isHair
     ? `Hi! I\'m <strong>${ctx.name}</strong> from ${ctx.subtitle}. How can I help you today? 💈`
     : `Hi! I\'m ${ctx.name}. How can I help you today?`,
@@ -2683,16 +2816,63 @@ function selectCigNode(id) {
 function reqSimulateUpload(id) {
   const req = S.kbRequirements && S.kbRequirements.find(r => r.id === id);
   if (!req) return;
-  req.status = 'uploading';
-  const el = document.getElementById('kg-' + id);
-  if (el) {
-    el.querySelector('.kg-upload-area') && (el.querySelector('.kg-upload-area').innerHTML =
-      '<div style="font-size:11px;color:#2255e8">⏳ Processing… chunking + embedding</div>');
+  kgStartProcessing(id, req, 'Uploaded document');
+}
+
+function kgFileSelected(id, input) {
+  const req = S.kbRequirements && S.kbRequirements.find(r => r.id === id);
+  if (!req || !input.files[0]) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    const content = e.target.result;
+    let parsed = null;
+    if (file.name.endsWith('.txt') || file.name.endsWith('.csv')) {
+      parsed = parseKbText(content, id);
+    }
+    kgStartProcessing(id, req, file.name, parsed);
+  };
+  reader.onerror = function() { kgStartProcessing(id, req, file.name, null); };
+
+  if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+    /* Can't parse PDF in browser without a lib — simulate extraction */
+    kgStartProcessing(id, req, file.name, null);
+  } else {
+    reader.readAsText(file);
   }
+}
+
+function parseKbText(text, id) {
+  /* simple price extractor: "Item Name   £99" or "Item Name - £99" */
+  const lines = text.split('\n').filter(l => l.trim());
+  const items = [];
+  lines.forEach(line => {
+    const m = line.match(/^(.+?)\s*[-—]?\s*£\s*(\d+)/);
+    if (m) items.push({ name: m[1].trim(), price: parseInt(m[2]) });
+  });
+  return items.length > 0 ? items : null;
+}
+
+function kgPasteText(id) {
+  const req = S.kbRequirements && S.kbRequirements.find(r => r.id === id);
+  if (!req) return;
+  const text = prompt('Paste your price list or content here:');
+  if (!text) return;
+  const parsed = parseKbText(text, id);
+  kgStartProcessing(id, req, 'Pasted text', parsed);
+}
+
+function kgStartProcessing(id, req, filename, parsed) {
+  req.status = 'uploading';
+  req._filename = filename;
+  req._parsed = parsed;
+  const area = document.querySelector(`#kg-${id} .kg-upload-area, label[for="kgfile-${id}"]`);
+  if (area) area.innerHTML = `<div style="font-size:11px;color:#2255e8;padding:8px 0">⏳ Processing <strong>${filename}</strong>…<br><span style="color:#9ca3af">Chunking · embedding · indexing</span></div>`;
   setTimeout(() => {
     req.status = 'done';
     render();
-  }, 1800);
+  }, 2000);
 }
 
 function reqSimulateConnect(id) {
