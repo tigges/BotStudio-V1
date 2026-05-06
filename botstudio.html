@@ -6,7 +6,7 @@
 <title>BotStudio</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* ─── Reset & Base ─────────────────────────────────────────────────────────── */
+/* --- Reset & Base ----------------------------------------------------------- */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
 body{font-family:'DM Sans',system-ui,sans-serif;font-size:12px;color:#1a1d2e;background:#f4f5f9;-webkit-font-smoothing:antialiased}
@@ -14,14 +14,14 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
 input[type=range]{-webkit-appearance:none;appearance:none}
 svg{display:block}
 
-/* ─── App Shell ─────────────────────────────────────────────────────────────── */
+/* --- App Shell --------------------------------------------------------------- */
 #app{display:flex;height:100vh;overflow:hidden}
 #sidebar{width:220px;flex-shrink:0;background:#fff;border-right:1px solid #e0e3ef;display:flex;flex-direction:column;overflow:hidden}
 #main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 #topbar{height:52px;background:#fff;border-bottom:1px solid #e0e3ef;display:flex;align-items:center;padding:0 20px;flex-shrink:0;gap:8px}
 #content{flex:1;overflow-y:auto;padding:20px;min-height:0}
 
-/* ─── Sidebar ────────────────────────────────────────────────────────────────── */
+/* --- Sidebar ------------------------------------------------------------------ */
 .sb-brand{padding:14px 16px;border-bottom:1px solid #e0e3ef;flex-shrink:0}
 .sb-logo{display:flex;align-items:center;gap:9px}
 .sb-logo-icon{width:30px;height:30px;background:#2255e8;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -51,7 +51,7 @@ svg{display:block}
 .bot-badge.draft{background:#f3f4f6;color:#6b7280}
 .bot-badge.paused{background:#fef3c7;color:#92400e}
 
-/* ─── Topbar common ─────────────────────────────────────────────────────────── */
+/* --- Topbar common ----------------------------------------------------------- */
 .tb-title{font-size:14px;font-weight:600;color:#1a1d2e;white-space:nowrap}
 .tb-sub{font-size:12px;color:#9ca3af;white-space:nowrap}
 .tb-divider{width:1px;height:20px;background:#e0e3ef;flex-shrink:0}
@@ -60,7 +60,7 @@ svg{display:block}
 .tb-tab{padding:4px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;color:#6b7280;border:none;background:transparent;transition:background .12s,color .12s}
 .tb-tab.active{background:#fff;color:#1a1d2e;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 
-/* ─── Buttons ────────────────────────────────────────────────────────────────── */
+/* --- Buttons ------------------------------------------------------------------ */
 .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:opacity .12s,background .12s;white-space:nowrap}
 .btn:hover{opacity:.85}
 .btn-primary{background:#2255e8;color:#fff}
@@ -71,19 +71,19 @@ svg{display:block}
 .btn-danger{background:#ef4444;color:#fff}
 .btn-green{background:#10b981;color:#fff}
 
-/* ─── Cards ─────────────────────────────────────────────────────────────────── */
+/* --- Cards ------------------------------------------------------------------- */
 .card{background:#fff;border:1px solid #e0e3ef;border-radius:12px;padding:14px}
 .card-title{font-size:13px;font-weight:600;color:#1a1d2e;margin-bottom:3px}
 .card-sub{font-size:11px;color:#6b7280;margin-bottom:12px}
 .card-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
 
-/* ─── Grid helpers ───────────────────────────────────────────────────────────── */
+/* --- Grid helpers ------------------------------------------------------------- */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 .span2{grid-column:span 2}
 
-/* ─── Forms ─────────────────────────────────────────────────────────────────── */
+/* --- Forms ------------------------------------------------------------------- */
 .fg{margin-bottom:11px}
 .fg:last-child{margin-bottom:0}
 .fl{display:block;font-size:11px;font-weight:500;color:#374151;margin-bottom:4px}
@@ -102,7 +102,7 @@ svg{display:block}
 .toggle input:checked+.toggle-slider{background:#2255e8}
 .toggle input:checked+.toggle-slider::after{transform:translateX(16px)}
 
-/* ─── Badges & chips ─────────────────────────────────────────────────────────── */
+/* --- Badges & chips ----------------------------------------------------------- */
 .badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 .badge-green{background:#d1fae5;color:#065f46}
 .badge-red{background:#fee2e2;color:#991b1b}
@@ -116,7 +116,7 @@ svg{display:block}
 .dot-amber{background:#f59e0b}
 .dot-gray{background:#9ca3af}
 
-/* ─── Dashboard ──────────────────────────────────────────────────────────────── */
+/* --- Dashboard ---------------------------------------------------------------- */
 .metric-val{font-size:26px;font-weight:600;color:#1a1d2e;line-height:1;margin-bottom:3px}
 .metric-lbl{font-size:11px;color:#6b7280;margin-bottom:8px}
 .metric-delta{font-size:11px;font-weight:500;display:inline-flex;align-items:center;gap:3px}
@@ -137,7 +137,7 @@ canvas.barchart{display:block;width:100%;height:140px}
 .activity-time{font-size:10px;color:#9ca3af;white-space:nowrap}
 .section-hdr{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;margin-bottom:10px}
 
-/* ─── Wizard ─────────────────────────────────────────────────────────────────── */
+/* --- Wizard ------------------------------------------------------------------- */
 .wiz-wrap{display:grid;grid-template-columns:270px 1fr 250px;gap:16px;height:calc(100vh - 52px - 40px)}
 .wiz-preview{background:#fff;border:1px solid #e0e3ef;border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
 .wiz-prev-hdr{padding:11px 13px;border-bottom:1px solid #e0e3ef;display:flex;align-items:center;gap:8px;flex-shrink:0}
@@ -180,7 +180,7 @@ canvas.barchart{display:block;width:100%;height:140px}
 .step-pill.pending{background:#f0f2f7;color:#9ca3af;cursor:default}
 .step-arrow{color:#d1d5db;font-size:12px}
 
-/* ─── Bot setup ──────────────────────────────────────────────────────────────── */
+/* --- Bot setup ---------------------------------------------------------------- */
 .prompt-preview{background:#1a1d2e;border-radius:10px;padding:13px;font-size:11px;color:#e2e8f0;line-height:1.6;font-family:'SF Mono',Consolas,monospace;white-space:pre-wrap;word-break:break-word;border:none;width:100%;outline:none;resize:none;min-height:100px}
 .channel-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f2f7}
 .channel-row:last-child{border-bottom:none}
@@ -191,7 +191,7 @@ canvas.barchart{display:block;width:100%;height:140px}
 .tone-btn{padding:5px 11px;border-radius:6px;font-size:11px;cursor:pointer;border:1.5px solid #e0e3ef;background:transparent;color:#6b7280;transition:all .12s}
 .tone-btn.active{border-color:#2255e8;background:#eef2fd;color:#2255e8;font-weight:500}
 
-/* ─── Flow Builder ───────────────────────────────────────────────────────────── */
+/* --- Flow Builder ------------------------------------------------------------- */
 .flow-layout{display:flex;height:calc(100vh - 52px - 40px);overflow:hidden;border-radius:12px;border:1px solid #e0e3ef;background:#fff}
 .flow-palette{width:188px;flex-shrink:0;border-right:1px solid #e0e3ef;padding:12px;overflow-y:auto}
 .flow-canvas-wrap{flex:1;position:relative;overflow:hidden;background:#f8f9fc;background-image:radial-gradient(circle,#d1d5e0 1px,transparent 1px);background-size:20px 20px;cursor:default}
@@ -233,7 +233,7 @@ canvas.barchart{display:block;width:100%;height:140px}
 .dp-bar{height:6px;border-radius:3px;background:#ef4444;margin-top:5px;opacity:.8}
 .opp-tag{display:inline-block;background:#eef2fd;color:#2255e8;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:500;margin:2px 2px 0 0}
 
-/* ─── Agent Assist ───────────────────────────────────────────────────────────── */
+/* --- Agent Assist ------------------------------------------------------------- */
 .assist-layout{display:flex;height:calc(100vh - 52px - 40px);border:1px solid #e0e3ef;border-radius:12px;overflow:hidden;background:#fff}
 .assist-inbox{width:255px;flex-shrink:0;border-right:1px solid #e0e3ef;overflow-y:auto}
 .assist-thread{flex:1;display:flex;flex-direction:column;background:#f8f9fc;min-width:0}
@@ -284,7 +284,7 @@ canvas.barchart{display:block;width:100%;height:140px}
 .conf-bar{height:100%;border-radius:2px;background:#10b981}
 .conf-pct{font-size:10px;font-weight:600;color:#059669;min-width:28px;text-align:right}
 
-/* ─── Analytics ──────────────────────────────────────────────────────────────── */
+/* --- Analytics ---------------------------------------------------------------- */
 canvas.linechart{display:block;width:100%;height:160px}
 .stat-row{display:flex;gap:14px;flex-wrap:wrap}
 .stat-item{flex:1;min-width:140px;background:#fff;border:1px solid #e0e3ef;border-radius:10px;padding:13px}
@@ -298,7 +298,7 @@ canvas.donut{width:120px;height:120px}
 .legend-item{display:flex;align-items:center;gap:7px;margin-bottom:7px;font-size:12px;color:#374151}
 .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 
-/* ─── Integrations ───────────────────────────────────────────────────────────── */
+/* --- Integrations ------------------------------------------------------------- */
 .int-card{background:#fff;border:1.5px solid #e0e3ef;border-radius:12px;padding:16px;transition:border-color .15s}
 .int-card:hover{border-color:#c7d2fe}
 .int-logo{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:11px;border:1px solid #f0f2f7;background:#fafbfe}
@@ -306,7 +306,7 @@ canvas.donut{width:120px;height:120px}
 .int-desc{font-size:11px;color:#6b7280;margin-bottom:11px;line-height:1.4}
 .int-foot{display:flex;align-items:center;justify-content:space-between}
 
-/* ─── Emulator ───────────────────────────────────────────────────────────────── */
+/* --- Emulator ----------------------------------------------------------------- */
 .emu-layout{display:grid;grid-template-columns:1fr 300px;gap:14px;height:calc(100vh - 52px - 40px)}
 .emu-chat{background:#fff;border:1px solid #e0e3ef;border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
 .emu-chat-hdr{padding:11px 13px;border-bottom:1px solid #e0e3ef;display:flex;align-items:center;gap:8px}
@@ -330,7 +330,7 @@ canvas.donut{width:120px;height:120px}
 .path-node{padding:3px 8px;background:#eef2fd;color:#2255e8;border-radius:5px;font-size:10px;font-weight:500}
 .path-arrow{color:#d1d5db;font-size:11px}
 
-/* ─── Knowledge Base ─────────────────────────────────────────────────────────── */
+/* --- Knowledge Base ----------------------------------------------------------- */
 .kb-table{width:100%;border-collapse:collapse}
 .kb-table th{text-align:left;padding:9px 12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;border-bottom:1.5px solid #e0e3ef}
 .kb-table td{padding:11px 12px;border-bottom:1px solid #f0f2f7;font-size:12px;color:#374151;vertical-align:middle}
@@ -340,7 +340,7 @@ canvas.donut{width:120px;height:120px}
 .progress-bar{height:5px;background:#f0f2f7;border-radius:3px;overflow:hidden;margin-top:3px}
 .progress-fill{height:100%;border-radius:3px;background:#2255e8}
 
-/* ─── Misc helpers ───────────────────────────────────────────────────────────── */
+/* --- Misc helpers ------------------------------------------------------------- */
 .flex{display:flex}
 .flex-col{display:flex;flex-direction:column}
 .items-center{align-items:center}
@@ -402,9 +402,18 @@ canvas.donut{width:120px;height:120px}
 </div>
 
 <script>
-/* ═══════════════════════════════════════════════════════════════════════════════
+// Error guard — runs before main script; catches parse errors in the block below
+window.onerror = function(msg, src, line, col, err) {
+  var el = document.getElementById('js-err');
+  if (!el) { el = document.createElement('div'); el.id = 'js-err'; el.style.cssText = 'position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#1a1d2e;color:#fff;font-family:monospace;padding:40px;z-index:9999;text-align:center'; document.body.appendChild(el); }
+  el.innerHTML = '<div style="font-size:20px;margin-bottom:12px">&#x26A0; BotStudio Error</div><div style="font-size:13px;color:#ef4444;margin-bottom:10px">' + msg + '</div><div style="font-size:11px;color:#9ca3af">Line: ' + line + ' Col: ' + col + '</div>';
+  return false;
+};
+</script>
+<script>
+/* ===============================================================================
    STATE
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 const S = {
   screen: 'dashboard',
   wizardActive: false,
@@ -461,9 +470,9 @@ const S = {
   ]
 };
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    ICONS
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 const ICO = {
   botSetup:    `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="4" y="6" width="7" height="6" rx="1.5"/><circle cx="7.5" cy="3.5" r="1.5"/><path d="M7.5 5v1"/><circle cx="6" cy="8.5" r=".8" fill="currentColor" stroke="none"/><circle cx="9" cy="8.5" r=".8" fill="currentColor" stroke="none"/><path d="M6 10.5c.8.7 2.2.7 3 0" stroke-linecap="round"/></svg>`,
   flow:        `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="2.5" cy="7.5" r="1.8"/><circle cx="12.5" cy="3" r="1.8"/><circle cx="12.5" cy="12" r="1.8"/><path d="M4.3 7.5h3.5l2.9-4.3" stroke-linecap="round"/><path d="M7.8 7.5l2.9 4.3" stroke-linecap="round"/></svg>`,
@@ -478,7 +487,7 @@ const ICO = {
   arrow_r:     `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 10,6"/><polyline points="6.5,2.5 10,6 6.5,9.5"/></svg>`,
   lock:        `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="6" width="9" height="6.5" rx="1.5"/><path d="M4 6V4a2.5 2.5 0 0 1 5 0v2" stroke-linecap="round"/></svg>`,
   refresh:     `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M11 2.5A5.5 5.5 0 1 0 12 7.5"/><polyline points="9,1 11,3 13,1"/></svg>`,
-  export:      `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1.5 9v2a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V9"/><polyline points="4,5.5 6.5,8 9,5.5"/><line x1="6.5" y1="1.5" x2="6.5" y2="8"/></svg>`,
+  exportIco:   `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1.5 9v2a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V9"/><polyline points="4,5.5 6.5,8 9,5.5"/><line x1="6.5" y1="1.5" x2="6.5" y2="8"/></svg>`,
   send:        `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="1.5,1.5 11.5,6.5 1.5,11.5 3,6.5 1.5,1.5"/><line x1="3" y1="6.5" x2="11.5" y2="6.5"/></svg>`,
   close:       `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>`,
   more:        `<svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><circle cx="3" cy="7" r="1.3"/><circle cx="7" cy="7" r="1.3"/><circle cx="11" cy="7" r="1.3"/></svg>`,
@@ -491,9 +500,9 @@ const ICO = {
   chevron_r:   `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="4.5,2 8.5,6 4.5,10"/></svg>`,
 };
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    NODE DEFINITIONS
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 const ND = {
   start:     { w: 44,  h: 44,  color: '#10b981', icon: '▶',  kind: 'circle' },
   end:       { w: 44,  h: 44,  color: '#ef4444', icon: '■',  kind: 'circle' },
@@ -503,9 +512,9 @@ const ND = {
   delay:     { w: 150, h: 54,  color: '#6b7280', icon: '⏱', kind: 'rect'   },
 };
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    NAVIGATION
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 const NAV_GROUPS = [
   { label: 'Build',   items: [
     { id: 'bot-setup',  label: 'Bot setup',     icon: 'botSetup'    },
@@ -543,9 +552,9 @@ function closeWizard() {
   render();
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    RENDER
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 function render() {
   renderSidebar();
   renderTopbar();
@@ -646,9 +655,9 @@ function afterRender() {
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    TOPBAR RENDERERS
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 function topbarDashboard() {
   return `
     <span class="tb-title">Dashboard</span>
@@ -656,7 +665,7 @@ function topbarDashboard() {
     <span class="text-muted text-sm">Last 7 days</span>
     <span class="tb-sub">${ICO.chevron_d}</span>
     <div class="tb-actions">
-      <button class="btn btn-ghost btn-sm">${ICO.export} Export</button>
+      <button class="btn btn-ghost btn-sm">${ICO.exportIco} Export</button>
       <button class="btn btn-ghost btn-sm">${ICO.refresh} Refresh</button>
     </div>`;
 }
@@ -739,7 +748,7 @@ function topbarAnalytics() {
     <span class="text-muted text-sm">Last 30 days</span>
     ${ICO.chevron_d}
     <div class="tb-actions">
-      <button class="btn btn-ghost btn-sm">${ICO.export} Export PDF</button>
+      <button class="btn btn-ghost btn-sm">${ICO.exportIco} Export PDF</button>
       <button class="btn btn-secondary btn-sm">Schedule report</button>
     </div>`;
 }
@@ -748,7 +757,7 @@ function topbarIntegrations() {
   return `
     <span class="tb-title">Integrations</span>
     <span class="tb-divider"></span>
-    <input class="fi-inline fi" style="width:220px" placeholder="${ICO.search} Search integrations…">
+    <input class="fi-inline fi" style="width:220px" placeholder="Search integrations…">
     <div class="tb-actions">
       <button class="btn btn-primary btn-sm">Browse marketplace</button>
     </div>`;
@@ -778,9 +787,9 @@ function topbarKB() {
     </div>`;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    SCREEN: DASHBOARD
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 function screenDashboard() {
   return `
   <div class="g4 mb14">
@@ -848,9 +857,9 @@ function metricCard(id, val, lbl, delta, dir) {
     </div>`;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    SCREEN: WIZARD
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 function screenWizard() {
   return `<div class="wiz-wrap">
     <!-- Preview -->
@@ -1026,9 +1035,9 @@ function chatBubble(role, text) {
   </div>`;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    SCREEN: BOT SETUP
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 function screenBotSetup() {
   return `
   <div class="g2">
@@ -1176,9 +1185,9 @@ function copyPrompt() {
   if (gp) navigator.clipboard?.writeText(gp.value);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    SCREEN: FLOW BUILDER
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 function screenFlow() {
   if (S.flowView === 'journey') return screenJourney();
   const inspector = S.selectedNode ? flowInspector() : `
@@ -1329,7 +1338,7 @@ function setFlowView(v) {
   render();
 }
 
-/* ─── Flow drag ──────────────────────────────────────────────────────────────── */
+/* --- Flow drag ---------------------------------------------------------------- */
 let FD = { active: false, nodeId: null, sx: 0, sy: 0, nx: 0, ny: 0 };
 
 function initFlowDrag() {
@@ -1453,9 +1462,9 @@ function updateNodePos(id, axis, v) {
   drawConnections();
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    SCREEN: AGENT ASSIST
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 const INBOX = [
   { id:0, name:'Sarah M.',  status:'active',   time:'2m',  preview:'I didn\'t receive any email',     ch:'web',   unread:2 },
   { id:1, name:'James K.',  status:'waiting',  time:'8m',  preview:'What\'s the enterprise pricing?', ch:'slack', unread:0 },
@@ -1584,9 +1593,9 @@ function useReply(el, text) {
   if (fi) fi.value = text;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    SCREEN: ANALYTICS
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 function screenAnalytics() {
   return `
   <div class="stat-row mb14">
@@ -1648,9 +1657,9 @@ function screenAnalytics() {
   </div>`;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    SCREEN: INTEGRATIONS
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 const INTEGRATIONS = [
   { logo:'💼', name:'Salesforce',   desc:'Sync contacts, cases, and pipeline data bi-directionally.',      connected:true,  cat:'CRM'    },
   { logo:'🎧', name:'Zendesk',      desc:'Create tickets and sync agent activity from conversations.',      connected:true,  cat:'Support'},
@@ -1687,9 +1696,9 @@ function toggleIntegration(name) {
   if (int) { int.connected = !int.connected; render(); }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    SCREEN: EMULATOR
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 const EMU_RESPONSES = [
   'I can help with that! Could you share a bit more detail?',
   'Thanks for reaching out. Let me look into this for you.',
@@ -1794,9 +1803,9 @@ function resetEmu() {
   render();
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    SCREEN: KNOWLEDGE BASE
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 function screenKB() {
   const typeIcon = { Text:'📝', URL:'🔗', PDF:'📄' };
   return `
@@ -1848,9 +1857,9 @@ function retrain(id) {
 
 function deleteKB(id) { S.kbItems = S.kbItems.filter(i => i.id !== id); render(); }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    CHART UTILITIES
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 function drawSparkline(id, data, color) {
   const canvas = document.getElementById(id);
   if (!canvas) return;
@@ -1976,17 +1985,29 @@ function drawDonut(id, data, colors) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
+/* ===============================================================================
    INIT
-   ═══════════════════════════════════════════════════════════════════════════════ */
+   =============================================================================== */
 function init() {
-  render();
-  // Cleanup flow drag listeners on navigate
+  try {
+    render();
+  } catch(e) {
+    document.body.innerHTML = '<div style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#1a1d2e;color:#fff;font-family:monospace;padding:40px;z-index:9999"><div style="font-size:22px;margin-bottom:16px">&#x26A0; BotStudio JS Error</div><div style="font-size:14px;color:#ef4444;margin-bottom:12px">' + e.message + '</div><pre style="font-size:11px;color:#9ca3af;max-width:800px;overflow:auto;text-align:left;background:#111;padding:16px;border-radius:8px">' + (e.stack||'').replace(/</g,'&lt;') + '</pre></div>';
+    return;
+  }
   window.addEventListener('hashchange', () => {
     document.removeEventListener('mousemove', onFlowMove);
     document.removeEventListener('mouseup', onFlowUp);
   });
 }
+
+// Also catch any uncaught errors
+window.onerror = function(msg, src, line, col, err) {
+  if (document.getElementById('app')) {
+    document.body.insertAdjacentHTML('beforeend', '<div style="position:fixed;bottom:0;left:0;right:0;background:#991b1b;color:#fff;padding:10px 16px;font-family:monospace;font-size:12px;z-index:9999"><b>JS Error:</b> ' + msg + ' (line ' + line + ')</div>');
+  }
+  return false;
+};
 
 init();
 </script>
