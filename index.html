@@ -372,6 +372,97 @@ canvas.donut{width:120px;height:120px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:#dde1eb;border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:#c5c9d8}
+
+/* --- Design Input -------------------------------------------------------------- */
+.di-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.di-tab{border:1.5px solid #e0e3ef;border-radius:12px;padding:14px;cursor:pointer;transition:all .15s;background:#fff;text-align:left}
+.di-tab:hover{border-color:#2255e8;background:#f8f9ff}
+.di-tab.active{border-color:#2255e8;background:#eef2fd}
+.di-tab-icon{font-size:20px;margin-bottom:8px}
+.di-tab-title{font-size:12px;font-weight:600;color:#1a1d2e;margin-bottom:3px}
+.di-tab-sub{font-size:11px;color:#6b7280;line-height:1.4}
+.di-body{background:#fff;border:1.5px solid #e0e3ef;border-radius:12px;padding:18px}
+.di-body.active-tab{border-color:#2255e8}
+.tmpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:4px}
+.tmpl-card{border:1.5px solid #e0e3ef;border-radius:10px;padding:13px;cursor:pointer;text-align:center;transition:all .15s;background:#fff}
+.tmpl-card:hover{border-color:#2255e8;background:#f8f9ff}
+.tmpl-card.selected{border-color:#2255e8;background:#eef2fd}
+.tmpl-card.locked{opacity:.45;cursor:default}
+.tmpl-icon{font-size:24px;margin-bottom:6px}
+.tmpl-name{font-size:12px;font-weight:500;color:#1a1d2e;margin-bottom:2px}
+.tmpl-tag{font-size:10px;color:#9ca3af}
+.chat-design{display:flex;flex-direction:column;gap:8px;min-height:260px}
+.cd-msg{display:flex;gap:8px;align-items:flex-end}
+.cd-msg.user{flex-direction:row-reverse}
+.cd-bubble{max-width:78%;padding:9px 12px;border-radius:12px;font-size:12px;line-height:1.5}
+.cd-msg.assistant .cd-bubble{background:#fff;border:1.5px solid #e0e3ef;border-bottom-left-radius:4px}
+.cd-msg.user .cd-bubble{background:#2255e8;color:#fff;border-bottom-right-radius:4px}
+.cd-avatar{width:26px;height:26px;border-radius:8px;background:#eef2fd;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.cd-typing{display:flex;gap:4px;padding:10px 14px}
+.cd-typing span{width:6px;height:6px;border-radius:50%;background:#c5c9d8;animation:blink 1.2s infinite}
+.cd-typing span:nth-child(2){animation-delay:.2s}
+.cd-typing span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.3}40%{opacity:1}}
+.gen-btn{display:inline-flex;align-items:center;gap:8px;background:#1a1d2e;color:#fff;border:none;padding:10px 20px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .12s;margin-top:14px}
+.gen-btn:hover{opacity:.85}
+.gen-btn-sub{font-size:11px;color:#9ca3af;margin-top:6px}
+
+/* --- CIG Review ---------------------------------------------------------------- */
+.cig-wrap{background:#fff;border:1.5px solid #e0e3ef;border-radius:12px;overflow:hidden;margin-bottom:14px}
+.cig-header{padding:12px 16px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;gap:10px;background:#fafbfe}
+.cig-title{font-size:13px;font-weight:600;color:#1a1d2e}
+.cig-legend{display:flex;gap:12px;margin-left:auto;flex-wrap:wrap}
+.cig-leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:#6b7280}
+.cig-leg-dot{width:8px;height:8px;border-radius:50%}
+.cig-canvas{width:100%;height:360px;background:#fafbfe;overflow:hidden;position:relative}
+svg.cig-svg{width:100%;height:100%;overflow:visible}
+.three-panel{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1.5px solid #e0e3ef;border-radius:12px;overflow:hidden;background:#fff}
+.tp-panel{border-right:1px solid #f0f2f7;display:flex;flex-direction:column}
+.tp-panel:last-child{border-right:none}
+.tp-hdr{padding:11px 14px;border-bottom:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between;background:#fafbfe;flex-shrink:0}
+.tp-title{font-size:12px;font-weight:600;color:#1a1d2e}
+.tp-body{padding:14px;overflow-y:auto;flex:1;font-size:12px;line-height:1.6;color:#374151}
+.script-turn{margin-bottom:10px}
+.script-actor{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.script-actor.bot{color:#2255e8}
+.script-actor.user{color:#6b7280}
+.script-text{padding:7px 10px;border-radius:8px;font-size:11px;line-height:1.5}
+.script-text.bot{background:#eef2fd;color:#1a1d2e}
+.script-text.user{background:#f4f5f9;color:#374151}
+.script-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.script-chip{padding:3px 9px;background:#fff;border:1px solid #e0e3ef;border-radius:20px;font-size:10px;color:#374151;cursor:pointer}
+.req-list-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid #f0f2f7}
+.req-list-item:last-child{border-bottom:none}
+.req-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px}
+.req-name{font-size:12px;font-weight:500;color:#1a1d2e;margin-bottom:2px}
+.req-used{font-size:10px;color:#9ca3af}
+.req-status{margin-left:auto;flex-shrink:0}
+
+/* --- Knowledge Gather ---------------------------------------------------------- */
+.kg-item{background:#fff;border:1.5px solid #e0e3ef;border-radius:10px;padding:14px;margin-bottom:10px;transition:border-color .15s}
+.kg-item.done{border-color:#10b981;background:#f0fdf8}
+.kg-item.optional{border-color:#e0e3ef}
+.kg-hdr{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.kg-ico{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.kg-name{font-size:13px;font-weight:600;color:#1a1d2e;flex:1}
+.kg-desc{font-size:11px;color:#6b7280;margin-bottom:10px;margin-left:42px}
+.kg-used{font-size:10px;color:#9ca3af;margin-bottom:8px;margin-left:42px}
+.kg-actions{display:flex;gap:8px;margin-left:42px;flex-wrap:wrap;align-items:center}
+.kg-done-badge{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:#059669;padding:4px 10px;background:#d1fae5;border-radius:6px}
+.kg-progress{background:#f0f2f7;border-radius:12px;height:8px;overflow:hidden;margin:6px 0;margin-left:42px}
+.kg-progress-fill{height:100%;background:#2255e8;border-radius:12px;transition:width .4s}
+.kg-upload-area{border:1.5px dashed #e0e3ef;border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;margin-left:42px;margin-bottom:8px}
+.kg-upload-area:hover{border-color:#2255e8;background:#f8f9ff}
+
+/* --- Detected intents strip ---------------------------------------------------- */
+.intent-strip{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.intent-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;border:1.5px solid}
+.intent-pill.entry   {color:#6b7280;border-color:#e0e3ef;background:#f9fafb}
+.intent-pill.qa      {color:#2255e8;border-color:#c7d2fe;background:#eef2fd}
+.intent-pill.action  {color:#5b21b6;border-color:#ddd6fe;background:#ede9fe}
+.intent-pill.branch  {color:#92400e;border-color:#fde68a;background:#fef3c7}
+.intent-pill.handoff {color:#991b1b;border-color:#fecaca;background:#fee2e2}
+.intent-pill.end     {color:#374151;border-color:#e5e7eb;background:#f9fafb}
 </style>
 </head>
 <body>
@@ -395,7 +486,7 @@ canvas.donut{width:120px;height:120px}
     <nav class="sb-nav" id="sidebar-nav"></nav>
     <div class="sb-bots" id="sidebar-bots"></div>
     <div style="padding:8px 16px 10px;border-top:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between">
-      <span style="font-size:10px;font-weight:600;color:#9ca3af;letter-spacing:.05em">v0.1.0</span>
+      <span style="font-size:10px;font-weight:600;color:#9ca3af;letter-spacing:.05em">v0.2.0</span>
       <span style="font-size:10px;color:#c5c9d8">Concept build</span>
     </div>
   </aside>
@@ -420,6 +511,17 @@ window.onerror = function(msg, src, line, col, err) {
    =============================================================================== */
 const S = {
   screen: 'dashboard',
+  /* design wizard state */
+  designMode: 'template',
+  designInput: '',
+  designDialogue: '',
+  selectedTemplate: 'hair-salon',
+  cigData: null,
+  selectedCigNode: null,
+  kbRequirements: null,
+  designChatHistory: [],
+  designChatStep: 0,
+  /* legacy wizard */
   wizardActive: false,
   wizardStep: 1,
   wizardDone: [false, false, false, false],
@@ -502,6 +604,10 @@ const ICO = {
   upload:      `<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1.5 9v2a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V9"/><polyline points="4,5.5 6.5,3 9,5.5"/><line x1="6.5" y1="3" x2="6.5" y2="9.5"/></svg>`,
   chevron_d:   `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,4.5 6,8.5 10,4.5"/></svg>`,
   chevron_r:   `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="4.5,2 8.5,6 4.5,10"/></svg>`,
+  design:      `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 10.5l8-8 2 2-8 8H2.5v-2z" stroke-linejoin="round"/><path d="M9 4l2 2" stroke-linecap="round"/></svg>`,
+  cigReview:   `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="5" width="4" height="3" rx="1"/><rect x="6" y="2" width="4" height="3" rx="1"/><rect x="6" y="9" width="4" height="3" rx="1"/><rect x="11" y="5" width="3" height="3" rx="1"/><path d="M5 6.5h1M10 3.5h1l1.5 2-1.5 2H10M10 10.5h1" stroke-linecap="round"/></svg>`,
+  kbGather:    `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="1.5" width="11" height="12" rx="1.5"/><path d="M5 5.5h5M5 7.5h5M5 9.5h3" stroke-linecap="round"/><circle cx="4" cy="5.5" r=".8" fill="currentColor" stroke="none"/><circle cx="4" cy="7.5" r=".8" fill="currentColor" stroke="none"/><circle cx="4" cy="9.5" r=".8" fill="currentColor" stroke="none"/></svg>`,
+  sparkle:     `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M7 1v2M7 11v2M1 7h2M11 7h2M3 3l1.5 1.5M9.5 9.5l1.5 1.5M3 11l1.5-1.5M9.5 4.5l1.5-1.5M7 5a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>`,
 };
 
 /* ===============================================================================
@@ -520,20 +626,83 @@ const ND = {
    NAVIGATION
    =============================================================================== */
 const NAV_GROUPS = [
-  { label: 'Build',   items: [
-    { id: 'bot-setup',  label: 'Bot setup',     icon: 'botSetup'    },
-    { id: 'flow',       label: 'Flow builder',  icon: 'flow'        },
-    { id: 'emulator',   label: 'Emulator',      icon: 'emulator'    },
-    { id: 'kb',         label: 'Knowledge base',icon: 'kb'          },
+  { label: 'Design', items: [
+    { id: 'design-input', label: 'Conversation design', icon: 'design'    },
+    { id: 'cig-review',   label: 'Review & approve',    icon: 'cigReview' },
+    { id: 'kb-gather',    label: 'Gather knowledge',    icon: 'kbGather'  },
   ]},
-  { label: 'Operate', items: [
-    { id: 'assist',     label: 'Agent assist',  icon: 'assist'      },
-    { id: 'dashboard',  label: 'Dashboard',     icon: 'dashboard'   },
+  { label: 'Build', items: [
+    { id: 'bot-setup',  label: 'Bot identity',   icon: 'botSetup'    },
+    { id: 'flow',       label: 'Flow builder',   icon: 'flow'        },
+    { id: 'kb',         label: 'Knowledge base', icon: 'kb'          },
+  ]},
+  { label: 'Run', items: [
+    { id: 'emulator',   label: 'Preview',        icon: 'emulator'    },
+    { id: 'assist',     label: 'Agent assist',   icon: 'assist'      },
+    { id: 'dashboard',  label: 'Dashboard',      icon: 'dashboard'   },
   ]},
   { label: 'Measure', items: [
-    { id: 'analytics',  label: 'Analytics',     icon: 'analytics'   },
-    { id: 'integrations',label:'Integrations',  icon: 'integrations'},
+    { id: 'analytics',  label: 'Analytics',      icon: 'analytics'   },
+    { id: 'integrations',label:'Integrations',   icon: 'integrations'},
   ]},
+];
+
+/* ===============================================================================
+   CIG DATA — HAIR SALON TEMPLATE
+   =============================================================================== */
+const HAIR_SALON_CIG = {
+  name: 'Hair Salon Booking',
+  industry: 'hair-beauty',
+  intents: [
+    { id:'greet',    label:'Greet',             kind:'entry',   color:'#6b7280', x:30,  y:150, w:90,  h:42, kb:null,       api:null,       desc:'Welcome the visitor and offer quick options' },
+    { id:'explore',  label:'Explore services',  kind:'qa',      color:'#2255e8', x:170, y:100, w:140, h:42, kb:'services',  api:null,       desc:'Show service menu with prices from KB' },
+    { id:'price',    label:'Price inquiry',     kind:'qa',      color:'#10b981', x:360, y:60,  w:120, h:42, kb:'prices',    api:null,       desc:'Answer specific price questions from KB' },
+    { id:'duration', label:'Duration info',     kind:'qa',      color:'#10b981', x:360, y:160, w:120, h:42, kb:'durations', api:null,       desc:'How long each service takes' },
+    { id:'book',     label:'Book appointment',  kind:'action',  color:'#8b5cf6', x:540, y:60,  w:150, h:42, kb:null,        api:'calendar', desc:'Collect service, date, name — write to calendar' },
+    { id:'waitlist', label:'No slots / waitlist',kind:'branch', color:'#f59e0b', x:540, y:170, w:150, h:42, kb:null,        api:null,       desc:'Offer to join waitlist or suggest alternatives' },
+    { id:'confirm',  label:'Confirm booking',   kind:'action',  color:'#2255e8', x:750, y:60,  w:130, h:42, kb:null,        api:'email',    desc:'Send confirmation email + calendar invite' },
+    { id:'openqa',   label:'Open Q&A',          kind:'qa',      color:'#9ca3af', x:170, y:240, w:110, h:42, kb:'faq',       api:null,       desc:'Answer anything else via RAG — parking, policy etc.' },
+    { id:'escalate', label:'Escalate to owner', kind:'handoff', color:'#ef4444', x:360, y:320, w:140, h:42, kb:null,        api:'notify',   desc:'Notify owner by email when bot cannot help' },
+    { id:'end',      label:'End',               kind:'end',     color:'#374151', x:750, y:155, w:75,  h:42, kb:null,        api:null,       desc:'Close conversation, optionally prompt for review' },
+  ],
+  edges: [
+    { from:'greet',   to:'explore',  label:''          },
+    { from:'greet',   to:'openqa',   label:''          },
+    { from:'explore', to:'price',    label:'price?'    },
+    { from:'explore', to:'duration', label:'how long?' },
+    { from:'explore', to:'book',     label:'book!'     },
+    { from:'price',   to:'book',     label:'book!'     },
+    { from:'price',   to:'duration', label:'duration?' },
+    { from:'duration',to:'book',     label:'book!'     },
+    { from:'book',    to:'confirm',  label:'slots ok'  },
+    { from:'book',    to:'waitlist', label:'no slots'  },
+    { from:'confirm', to:'end',      label:''          },
+    { from:'waitlist',to:'end',      label:''          },
+    { from:'openqa',  to:'escalate', label:"can't help"},
+    { from:'escalate',to:'end',      label:''          },
+  ],
+  requirements: [
+    { id:'price-list', label:'Price list + services', icon:'📄', type:'kb',  required:true,  status:'pending', desc:'All services, prices, durations', used:['explore','price','duration'] },
+    { id:'calendar',   label:'Google Calendar',       icon:'📅', type:'api', required:true,  status:'pending', desc:'Read availability, write bookings', used:['book','confirm']          },
+    { id:'email',      label:'Confirmation email',    icon:'📧', type:'api', required:false, status:'pending', desc:'Send booking confirmations to customers', used:['confirm']          },
+    { id:'faq',        label:'FAQ / policies',        icon:'📝', type:'kb',  required:false, status:'pending', desc:'Parking, cancellation, T&Cs, hours', used:['openqa']              },
+  ]
+};
+
+const TEMPLATES = [
+  { id:'hair-salon',  icon:'💈', name:'Hair salon',     tag:'Booking + FAQ',   cig: HAIR_SALON_CIG },
+  { id:'restaurant',  icon:'🍽', name:'Restaurant',     tag:'Reservations',    cig: null },
+  { id:'clinic',      icon:'🏥', name:'Clinic',         tag:'Appointments',    cig: null },
+  { id:'gym',         icon:'🏋', name:'Gym / fitness',  tag:'Classes + plans', cig: null },
+  { id:'tutor',       icon:'📚', name:'Tutor',          tag:'Booking + info',  cig: null },
+  { id:'custom',      icon:'✨', name:'Custom',         tag:'Describe yours',  cig: null },
+];
+
+const DESIGN_CHAT_SCRIPT = [
+  { role:'assistant', text:'Hi! I\'m your BotStudio design assistant. Tell me about your business — or describe what your customers usually want to do.' },
+  { role:'assistant', text:'Got it! A few quick questions: do your customers usually know what service they want, or do they browse first?', trigger:'any' },
+  { role:'assistant', text:'Perfect. And do you take appointments — or is it mainly walk-in?', trigger:'any' },
+  { role:'assistant', text:'Great. I\'ve designed your conversation. Here\'s what your customers will experience — reviewing now...', trigger:'any', action:'generate' },
 ];
 
 function navigate(screen) {
@@ -543,10 +712,13 @@ function navigate(screen) {
 }
 
 function openWizard() {
-  S.wizardActive = true;
-  S.wizardStep = 1;
-  S.wizardDone = [false, false, false, false];
-  S.screen = 'wizard';
+  S.screen = 'design-input';
+  S.designMode = 'template';
+  S.selectedTemplate = 'hair-salon';
+  S.cigData = null;
+  S.kbRequirements = null;
+  S.designChatHistory = [];
+  S.designChatStep = 0;
   render();
 }
 
@@ -599,15 +771,18 @@ function renderSidebar() {
 function renderTopbar() {
   const tb = document.getElementById('topbar');
   const map = {
-    dashboard:    topbarDashboard,
-    'bot-setup':  topbarBotSetup,
-    flow:         topbarFlow,
-    assist:       topbarAssist,
-    analytics:    topbarAnalytics,
-    integrations: topbarIntegrations,
-    emulator:     topbarEmulator,
-    kb:           topbarKB,
-    wizard:       topbarWizard,
+    dashboard:      topbarDashboard,
+    'bot-setup':    topbarBotSetup,
+    flow:           topbarFlow,
+    assist:         topbarAssist,
+    analytics:      topbarAnalytics,
+    integrations:   topbarIntegrations,
+    emulator:       topbarEmulator,
+    kb:             topbarKB,
+    wizard:         topbarWizard,
+    'design-input': topbarDesignInput,
+    'cig-review':   topbarCigReview,
+    'kb-gather':    topbarKbGather,
   };
   tb.innerHTML = (map[S.screen] || (() => `<span class="tb-title">${S.screen}</span>`))();
 }
@@ -615,15 +790,18 @@ function renderTopbar() {
 function renderContent() {
   const c = document.getElementById('content');
   const map = {
-    dashboard:    screenDashboard,
-    'bot-setup':  screenBotSetup,
-    flow:         screenFlow,
-    assist:       screenAssist,
-    analytics:    screenAnalytics,
-    integrations: screenIntegrations,
-    emulator:     screenEmulator,
-    kb:           screenKB,
-    wizard:       screenWizard,
+    dashboard:      screenDashboard,
+    'bot-setup':    screenBotSetup,
+    flow:           screenFlow,
+    assist:         screenAssist,
+    analytics:      screenAnalytics,
+    integrations:   screenIntegrations,
+    emulator:       screenEmulator,
+    kb:             screenKB,
+    wizard:         screenWizard,
+    'design-input': screenDesignInput,
+    'cig-review':   screenCigReview,
+    'kb-gather':    screenKbGather,
   };
   c.innerHTML = (map[S.screen] || (() => `<p class="text-muted">Coming soon.</p>`))();
   afterRender();
@@ -656,6 +834,12 @@ function afterRender() {
   if (S.screen === 'wizard') {
     wizardBindInputs();
     wizardUpdatePreview();
+  }
+  if (S.screen === 'cig-review' && S.cigData) {
+    requestAnimationFrame(() => drawCigSvg());
+  }
+  if (S.screen === 'design-input' && S.designMode === 'chat') {
+    scrollChatDown();
   }
 }
 
@@ -788,6 +972,337 @@ function topbarKB() {
     <div class="tb-actions">
       <button class="btn btn-secondary btn-sm">${ICO.upload} Add source</button>
       <button class="btn btn-primary btn-sm">Train model</button>
+    </div>`;
+}
+
+function topbarDesignInput() {
+  const modeLabels = { describe:'Describe', dialogue:'Sample dialogue', template:'Template', chat:'Design assistant' };
+  return `
+    ${ICO.sparkle}
+    <span class="tb-title">Conversation Design</span>
+    <span class="tb-divider"></span>
+    <span class="text-muted text-sm">${modeLabels[S.designMode] || 'New bot'}</span>
+    <div class="tb-actions">
+      <button class="btn btn-ghost btn-sm">Browse examples</button>
+    </div>`;
+}
+
+function topbarCigReview() {
+  const cig = S.cigData;
+  return `
+    ${ICO.cigReview}
+    <span class="tb-title">Review Design</span>
+    <span class="tb-divider"></span>
+    <span class="text-muted text-sm">${cig ? cig.name : 'No design generated'}</span>
+    <div class="tb-actions">
+      <button class="btn btn-ghost btn-sm" onclick="navigate('design-input')">← Edit input</button>
+      <button class="btn btn-secondary btn-sm" onclick="navigate('kb-gather')">Gather knowledge →</button>
+      <button class="btn btn-primary btn-sm" onclick="navigate('emulator')">${ICO.emulator} Preview bot</button>
+    </div>`;
+}
+
+function topbarKbGather() {
+  const reqs = S.kbRequirements || [];
+  const done = reqs.filter(r => r.status === 'done').length;
+  const required = reqs.filter(r => r.required).length;
+  const requiredDone = reqs.filter(r => r.required && r.status === 'done').length;
+  return `
+    ${ICO.kbGather}
+    <span class="tb-title">Gather Knowledge</span>
+    <span class="tb-divider"></span>
+    <span class="text-muted text-sm">${done} of ${reqs.length} done</span>
+    <div class="tb-actions">
+      <button class="btn btn-ghost btn-sm" onclick="navigate('cig-review')">← Review design</button>
+      <button class="btn btn-${requiredDone >= required ? 'primary' : 'ghost'} btn-sm" onclick="navigate('emulator')">${ICO.emulator} ${requiredDone >= required ? 'Preview bot' : 'Preview (partial)'}</button>
+    </div>`;
+}
+
+/* ===============================================================================
+   SCREEN: DESIGN INPUT
+   =============================================================================== */
+function screenDesignInput() {
+  const modeTab = (id, icon, title, sub) => `
+    <div class="di-tab ${S.designMode === id ? 'active' : ''}" onclick="setDesignMode('${id}')">
+      <div class="di-tab-icon">${icon}</div>
+      <div class="di-tab-title">${title}</div>
+      <div class="di-tab-sub">${sub}</div>
+    </div>`;
+
+  const bodyDescribe = `
+    <div class="di-body ${S.designMode === 'describe' ? 'active-tab' : ''}" style="${S.designMode !== 'describe' ? 'display:none' : ''}">
+      <label class="fl mb4">Describe your situation in plain language</label>
+      <textarea class="fta" id="di-describe" rows="5"
+        placeholder="e.g. A client wants to explore hair services, ask about prices, then book an appointment. Sometimes they ask about parking."
+        oninput="S.designInput=this.value">${S.designInput}</textarea>
+      <div class="flex items-center gap8 mt8">
+        <button class="gen-btn" onclick="generateDesign('describe')">
+          ${ICO.sparkle} Generate conversation design
+        </button>
+        <span class="gen-btn-sub">~3 seconds · powered by AI</span>
+      </div>
+    </div>`;
+
+  const bodyDialogue = `
+    <div class="di-body ${S.designMode === 'dialogue' ? 'active-tab' : ''}" style="${S.designMode !== 'dialogue' ? 'display:none' : ''}">
+      <label class="fl mb4">Paste or type a sample conversation (real or ideal)</label>
+      <textarea class="fta" id="di-dialogue" rows="9"
+        placeholder="Customer: hi what cuts do you offer&#10;You: we do cuts from £35, colour from £65…&#10;Customer: can I book Saturday?&#10;You: I have 10am and 2pm free&#10;Customer: 2pm please, I'm Sarah&#10;You: booked! See you Saturday at 2 Sarah"
+        oninput="S.designDialogue=this.value">${S.designDialogue}</textarea>
+      <div class="flex items-center gap8 mt8">
+        <button class="gen-btn" onclick="generateDesign('dialogue')">
+          ${ICO.sparkle} Extract conversation design
+        </button>
+        <span class="gen-btn-sub">Analyses each turn · maps to intents</span>
+      </div>
+    </div>`;
+
+  const bodyTemplate = `
+    <div class="di-body ${S.designMode === 'template' ? 'active-tab' : ''}" style="${S.designMode !== 'template' ? 'display:none' : ''}">
+      <label class="fl mb8">Choose a pre-built design from the pattern library</label>
+      <div class="tmpl-grid">
+        ${TEMPLATES.map(t => `
+          <div class="tmpl-card ${t.id === S.selectedTemplate ? 'selected' : ''} ${!t.cig ? 'locked' : ''}"
+               onclick="${t.cig ? `selectTemplate('${t.id}')` : ''}">
+            <div class="tmpl-icon">${t.icon}</div>
+            <div class="tmpl-name">${t.name}</div>
+            <div class="tmpl-tag">${t.cig ? t.tag : 'Coming soon'}</div>
+          </div>`).join('')}
+      </div>
+      <div class="flex items-center gap8 mt12">
+        <button class="gen-btn" onclick="generateDesign('template')">
+          ${ICO.sparkle} Use ${TEMPLATES.find(t => t.id === S.selectedTemplate)?.name || 'template'} design
+        </button>
+        <span class="gen-btn-sub">Instant · built from 400+ real bots</span>
+      </div>
+    </div>`;
+
+  const chatMsgs = S.designChatHistory.map(m => `
+    <div class="cd-msg ${m.role}">
+      ${m.role === 'assistant' ? '<div class="cd-avatar">🎨</div>' : ''}
+      <div class="cd-bubble">${m.text}</div>
+      ${m.role === 'user' ? '<div class="cd-avatar" style="background:#1a1d2e;color:#fff;font-size:11px">U</div>' : ''}
+    </div>`).join('');
+
+  const initChat = S.designChatHistory.length === 0
+    ? `<div class="cd-msg assistant"><div class="cd-avatar">🎨</div>
+        <div class="cd-bubble">${DESIGN_CHAT_SCRIPT[0].text}</div></div>`
+    : chatMsgs;
+
+  const bodyChat = `
+    <div class="di-body ${S.designMode === 'chat' ? 'active-tab' : ''}" style="${S.designMode !== 'chat' ? 'display:none' : ''}">
+      <div class="chat-design" id="di-chat-msgs" style="max-height:260px;overflow-y:auto">
+        ${initChat}
+      </div>
+      <div class="flex gap8 mt10">
+        <input class="fi" id="di-chat-input" placeholder="Describe your business…" style="flex:1"
+          onkeydown="if(event.key==='Enter')sendDesignChat()">
+        <button class="btn btn-primary btn-sm" onclick="sendDesignChat()">${ICO.send}</button>
+      </div>
+    </div>`;
+
+  return `
+    <div class="mb16">
+      <h2 style="font-size:18px;font-weight:600;color:#1a1d2e;margin-bottom:4px">Design your bot</h2>
+      <p class="text-muted">Describe a situation, show a sample conversation, choose a template — or just talk to the design assistant. We generate the full conversation design from your input.</p>
+    </div>
+    <div class="di-tabs">
+      ${modeTab('describe',  '✍️', 'Describe it',           'Write what your customers want to do')}
+      ${modeTab('dialogue',  '💬', 'Show a conversation',   'Paste a real or ideal exchange')}
+      ${modeTab('template',  '⚡', 'Use a template',        'Start from 400+ industry patterns')}
+      ${modeTab('chat',      '🎨', 'Design assistant',      'Talk to the AI — it designs as you chat')}
+    </div>
+    ${bodyDescribe}${bodyDialogue}${bodyTemplate}${bodyChat}`;
+}
+
+/* ===============================================================================
+   SCREEN: CIG REVIEW
+   =============================================================================== */
+function screenCigReview() {
+  if (!S.cigData) {
+    return `<div class="card" style="text-align:center;padding:40px">
+      <div style="font-size:32px;margin-bottom:12px">🎨</div>
+      <p style="font-size:14px;font-weight:600;margin-bottom:6px">No design yet</p>
+      <p class="text-muted mb14">Go to Conversation Design and describe your bot first.</p>
+      <button class="btn btn-primary" onclick="navigate('design-input')">Design your bot →</button>
+    </div>`;
+  }
+  const cig = S.cigData;
+  const kindColors = { entry:'#6b7280', qa:'#2255e8', action:'#8b5cf6', branch:'#f59e0b', handoff:'#ef4444', end:'#374151' };
+
+  const intentStrip = cig.intents.map(n => `
+    <span class="intent-pill ${n.kind}" style="border-color:${kindColors[n.kind]}20">
+      <span style="width:7px;height:7px;border-radius:50%;background:${n.kind==='qa'?'#2255e8':n.kind==='action'?'#8b5cf6':n.kind==='branch'?'#f59e0b':n.kind==='handoff'?'#ef4444':n.kind==='end'?'#374151':'#6b7280'};display:inline-block"></span>
+      ${n.label}
+    </span>`).join('');
+
+  const scriptHtml = cigToScript(cig);
+  const reqHtml = cigToRequirements(cig);
+
+  return `
+    <div class="intent-strip">${intentStrip}</div>
+
+    <div class="cig-wrap mb14">
+      <div class="cig-header">
+        <span class="cig-title">Conversational Intent Graph — ${cig.name}</span>
+        <div class="cig-legend">
+          ${[['entry','#6b7280','Entry'],['qa','#2255e8','Q&A (RAG)'],['action','#8b5cf6','Action (API)'],['branch','#f59e0b','Branch'],['handoff','#ef4444','Escalate'],['end','#374151','End']].map(([k,c,l]) => `
+            <span class="cig-leg-item"><span class="cig-leg-dot" style="background:${c}"></span>${l}</span>`).join('')}
+        </div>
+      </div>
+      <div class="cig-canvas">
+        <svg class="cig-svg" id="cig-svg" viewBox="0 0 900 400"></svg>
+      </div>
+    </div>
+
+    <div class="three-panel">
+      <div class="tp-panel">
+        <div class="tp-hdr">
+          <span class="tp-title">💬 Conversation script</span>
+          <button class="btn btn-ghost btn-xs">Edit</button>
+        </div>
+        <div class="tp-body">${scriptHtml}</div>
+      </div>
+      <div class="tp-panel">
+        <div class="tp-hdr">
+          <span class="tp-title">⋮ Intent flow</span>
+          <button class="btn btn-ghost btn-xs" onclick="navigate('flow')">Open in builder</button>
+        </div>
+        <div class="tp-body">
+          ${cig.intents.map(n => `
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+              <span style="width:10px;height:10px;border-radius:50%;background:${kindColors[n.kind]};flex-shrink:0"></span>
+              <span style="font-size:12px;font-weight:500;color:#1a1d2e;flex:1">${n.label}</span>
+              ${n.kb ? `<span class="badge badge-blue" style="font-size:9px">KB</span>` : ''}
+              ${n.api ? `<span class="badge badge-purple" style="font-size:9px">API</span>` : ''}
+            </div>
+            ${(cig.edges.filter(e => e.from === n.id)).map(e => {
+              const to = cig.intents.find(i => i.id === e.to);
+              return to ? `<div style="font-size:10px;color:#9ca3af;margin:-4px 0 8px 17px">→ ${to.label}${e.label ? ` (${e.label})` : ''}</div>` : '';
+            }).join('')}
+          `).join('')}
+        </div>
+      </div>
+      <div class="tp-panel">
+        <div class="tp-hdr">
+          <span class="tp-title">📋 Requirements</span>
+          <button class="btn btn-ghost btn-xs" onclick="navigate('kb-gather')">Gather →</button>
+        </div>
+        <div class="tp-body">${reqHtml}</div>
+      </div>
+    </div>`;
+}
+
+function cigToScript(cig) {
+  const scripts = {
+    'hair-beauty': [
+      { role:'bot', text:'Hi! I\'m Coco from Yuki\'s Hair Studio. How can I help?', chips:['Book appointment','See services','Ask a question'] },
+      { role:'user', text:'What services do you offer?' },
+      { role:'bot', text:'We offer: <strong>Cut £35</strong> · <strong>Colour £65</strong> · <strong>Highlights £95</strong> · <strong>Blowout £40</strong> and more. Interested in booking?', chips:['Book now','Prices','How long?'] },
+      { role:'user', text:'How much is a cut and colour?' },
+      { role:'bot', text:'A Cut + Colour is <strong>£85</strong> and takes about <strong>2 hours</strong>. Want to book one?', chips:['Book it','See availability'] },
+      { role:'user', text:'Can I book Saturday?' },
+      { role:'bot', text:'I have these Saturday slots free:', chips:['10:00am','1:00pm','3:30pm'] },
+      { role:'user', text:'1pm please, I\'m Sarah' },
+      { role:'bot', text:'<strong>Booked!</strong> Sarah — Cut + Colour, Saturday 1:00pm at Yuki\'s. Ref #YHS-001. Confirmation sent ✓' },
+    ]
+  };
+  const turns = scripts[cig.industry] || scripts['hair-beauty'];
+  return turns.map(t => `
+    <div class="script-turn">
+      <div class="script-actor ${t.role}">${t.role === 'bot' ? '🤖 Coco' : '👤 Customer'}</div>
+      <div class="script-text ${t.role}">${t.text}</div>
+      ${t.chips ? `<div class="script-chips">${t.chips.map(c => `<span class="script-chip">${c}</span>`).join('')}</div>` : ''}
+    </div>`).join('');
+}
+
+function cigToRequirements(cig) {
+  if (!cig.requirements) return '';
+  return cig.requirements.map(r => `
+    <div class="req-list-item">
+      <div class="req-icon" style="background:${r.type==='kb'?'#eef2fd':'#ede9fe'}">${r.icon}</div>
+      <div style="flex:1">
+        <div class="req-name">${r.label} ${r.required ? '' : '<span class="badge badge-gray" style="font-size:9px">optional</span>'}</div>
+        <div class="req-used">Used by: ${r.used.join(', ')}</div>
+      </div>
+      <div class="req-status">
+        <button class="btn btn-ghost btn-xs" onclick="navigate('kb-gather')">${r.type==='kb'?'Upload':'Connect'}</button>
+      </div>
+    </div>`).join('');
+}
+
+/* ===============================================================================
+   SCREEN: KNOWLEDGE GATHER
+   =============================================================================== */
+function screenKbGather() {
+  const reqs = S.kbRequirements || (S.cigData ? [...S.cigData.requirements] : []);
+  if (!S.kbRequirements) S.kbRequirements = reqs;
+  const done = reqs.filter(r => r.status === 'done').length;
+  const required = reqs.filter(r => r.required);
+  const requiredDone = required.filter(r => r.status === 'done').length;
+  const pct = reqs.length ? Math.round(done / reqs.length * 100) : 0;
+
+  if (!S.cigData) return `<div class="card" style="text-align:center;padding:40px">
+    <p class="text-muted mb14">Design your bot first to see requirements.</p>
+    <button class="btn btn-primary" onclick="navigate('design-input')">Design your bot →</button>
+  </div>`;
+
+  return `
+    <div class="flex items-center justify-between mb16">
+      <div>
+        <h2 style="font-size:16px;font-weight:600;color:#1a1d2e;margin-bottom:3px">Gather knowledge</h2>
+        <p class="text-muted">Each item below enables one or more steps in your customer's journey.</p>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:22px;font-weight:600;color:#1a1d2e">${pct}%</div>
+        <div class="text-muted text-xs">complete</div>
+      </div>
+    </div>
+    <div style="background:#f0f2f7;border-radius:8px;height:6px;overflow:hidden;margin-bottom:20px">
+      <div style="height:100%;width:${pct}%;background:#2255e8;border-radius:8px;transition:width .4s"></div>
+    </div>
+
+    ${reqs.map(r => {
+      const isDone = r.status === 'done';
+      return `
+      <div class="kg-item ${isDone ? 'done' : ''}" id="kg-${r.id}">
+        <div class="kg-hdr">
+          <div class="kg-ico" style="background:${isDone ? '#d1fae5' : r.type==='kb'?'#eef2fd':'#ede9fe'}">${isDone ? '✓' : r.icon}</div>
+          <div class="kg-name">${r.label}</div>
+          ${r.required ? '' : '<span class="badge badge-gray" style="font-size:9px;margin-left:auto">optional</span>'}
+        </div>
+        <div class="kg-desc">${r.desc}</div>
+        <div class="kg-used">Enables: ${r.used.map(u => `<span class="badge badge-${r.type==='kb'?'blue':'purple'}" style="font-size:9px;margin-right:3px">${u}</span>`).join('')}</div>
+        ${isDone
+          ? `<div class="kg-actions"><span class="kg-done-badge">✓ Connected &amp; ready</span><button class="btn btn-ghost btn-xs" onclick="reqReset('${r.id}')">Remove</button></div>`
+          : r.type === 'kb'
+            ? `<div class="kg-upload-area" onclick="reqSimulateUpload('${r.id}')">
+                <div style="font-size:20px;margin-bottom:5px">📎</div>
+                <div style="font-size:12px;font-weight:500;color:#374151">Click to upload PDF, or paste text</div>
+                <div style="font-size:10px;color:#9ca3af;margin-top:3px">PDF · TXT · URL supported</div>
+              </div>
+              <div class="kg-actions">
+                <button class="btn btn-secondary btn-sm" onclick="reqSimulateUpload('${r.id}')">Upload file</button>
+                <button class="btn btn-ghost btn-sm" onclick="reqSimulateUpload('${r.id}')">Paste text</button>
+                ${!r.required ? `<button class="btn btn-ghost btn-sm text-subtle" onclick="reqSkip('${r.id}')">Skip for now</button>` : ''}
+              </div>`
+            : `<div class="kg-actions">
+                ${r.id === 'calendar'
+                  ? `<button class="btn btn-primary btn-sm" onclick="reqSimulateConnect('${r.id}')"><span style="background:white;color:#4285f4;border-radius:3px;padding:0 4px;font-weight:700;font-size:10px">G</span> Connect Google Calendar</button>`
+                  : `<button class="btn btn-secondary btn-sm" onclick="reqSimulateConnect('${r.id}')">Connect ${r.label}</button>`}
+                ${!r.required ? `<button class="btn btn-ghost btn-sm text-subtle" onclick="reqSkip('${r.id}')">Skip for now</button>` : ''}
+              </div>`
+        }
+      </div>`;
+    }).join('')}
+
+    <div style="margin-top:20px;padding:16px;background:#fff;border:1.5px solid ${requiredDone >= required.length ? '#10b981' : '#e0e3ef'};border-radius:12px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#1a1d2e">${requiredDone >= required.length ? '🚀 Ready to preview!' : `${requiredDone} of ${required.length} required items done`}</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:2px">${requiredDone >= required.length ? 'All required knowledge connected. Optional items can be added after launch.' : 'Complete required items to preview your bot.'}</div>
+      </div>
+      <button class="btn btn-${requiredDone >= required.length ? 'primary' : 'ghost'} btn-sm" onclick="navigate('emulator')">
+        ${ICO.emulator} ${requiredDone >= required.length ? 'Preview Coco' : 'Preview (partial)'}
+      </button>
     </div>`;
 }
 
@@ -1805,6 +2320,181 @@ function emuSend() {
 function resetEmu() {
   S.emuMessages = [{ role: 'bot', text: 'Hi! I\'m Aria. How can I help you today?' }];
   render();
+}
+
+/* ===============================================================================
+   DESIGN INPUT — interactions
+   =============================================================================== */
+function setDesignMode(mode) {
+  S.designMode = mode;
+  if (mode === 'chat' && S.designChatHistory.length === 0) {
+    S.designChatHistory = [{ role:'assistant', text: DESIGN_CHAT_SCRIPT[0].text }];
+    S.designChatStep = 1;
+  }
+  render();
+}
+
+function selectTemplate(id) {
+  S.selectedTemplate = id;
+  render();
+}
+
+function generateDesign(mode) {
+  let cig = null;
+  if (mode === 'template' && S.selectedTemplate === 'hair-salon') {
+    cig = HAIR_SALON_CIG;
+  } else if (mode === 'describe') {
+    const input = (S.designInput || '').toLowerCase();
+    const isHair = /hair|salon|cut|colour|color|highlight|appointment|beauty/i.test(input);
+    cig = isHair ? HAIR_SALON_CIG : HAIR_SALON_CIG;
+  } else if (mode === 'dialogue') {
+    cig = HAIR_SALON_CIG;
+  } else {
+    cig = HAIR_SALON_CIG;
+  }
+  S.cigData = cig;
+  S.kbRequirements = JSON.parse(JSON.stringify(cig.requirements));
+  S.screen = 'cig-review';
+  render();
+}
+
+function sendDesignChat() {
+  const fi = document.getElementById('di-chat-input');
+  if (!fi || !fi.value.trim()) return;
+  const userText = fi.value.trim();
+  fi.value = '';
+  S.designChatHistory.push({ role:'user', text: userText });
+  const step = S.designChatStep;
+  if (step < DESIGN_CHAT_SCRIPT.length - 1) {
+    S.designChatStep++;
+    setTimeout(() => {
+      const next = DESIGN_CHAT_SCRIPT[S.designChatStep];
+      S.designChatHistory.push({ role:'assistant', text: next.text });
+      if (next.action === 'generate') {
+        setTimeout(() => { generateDesign('chat'); }, 800);
+      } else {
+        render();
+        scrollChatDown();
+      }
+    }, 600);
+    render();
+    scrollChatDown();
+  } else {
+    generateDesign('chat');
+  }
+}
+
+function scrollChatDown() {
+  setTimeout(() => {
+    const el = document.getElementById('di-chat-msgs');
+    if (el) el.scrollTop = el.scrollHeight;
+  }, 50);
+}
+
+/* ===============================================================================
+   CIG SVG DRAWING
+   =============================================================================== */
+function drawCigSvg() {
+  const svg = document.getElementById('cig-svg');
+  if (!svg || !S.cigData) return;
+  const cig = S.cigData;
+  const W = svg.parentElement.clientWidth || 900;
+  const H = 360;
+  const scaleX = W / 900;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const defs = `<defs>
+    <marker id="carrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L7,3 z" fill="#c5c9d8"/>
+    </marker>
+    <marker id="carrow-hi" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L7,3 z" fill="#2255e8"/>
+    </marker>
+  </defs>`;
+
+  const edgePaths = cig.edges.map(e => {
+    const fn = cig.intents.find(n => n.id === e.from);
+    const tn = cig.intents.find(n => n.id === e.to);
+    if (!fn || !tn) return '';
+    const x1 = (fn.x + fn.w) * scaleX;
+    const y1 = (fn.y + fn.h / 2);
+    const x2 = tn.x * scaleX;
+    const y2 = (tn.y + tn.h / 2);
+    const dx = Math.max(Math.abs(x2 - x1) * .45, 30);
+    const d = `M ${x1} ${y1} C ${x1+dx} ${y1} ${x2-dx} ${y2} ${x2} ${y2}`;
+    const hi = S.selectedCigNode === fn.id || S.selectedCigNode === tn.id;
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    return `<path d="${d}" fill="none" stroke="${hi ? '#2255e8' : '#dde1eb'}" stroke-width="${hi ? 1.8 : 1.2}" marker-end="url(#${hi ? 'carrow-hi' : 'carrow'})"/>
+      ${e.label ? `<rect x="${mx-18}" y="${my-9}" width="36" height="16" rx="4" fill="${hi?'#eef2fd':'#f8f9fc'}" stroke="${hi?'#2255e8':'#e0e3ef'}" stroke-width="1"/>
+        <text x="${mx}" y="${my+4}" text-anchor="middle" font-size="9" fill="${hi?'#2255e8':'#9ca3af'}" font-family="DM Sans,sans-serif">${e.label}</text>` : ''}`;
+  }).join('');
+
+  const nodeEls = cig.intents.map(n => {
+    const nx = n.x * scaleX;
+    const ny = n.y;
+    const nw = n.w * scaleX;
+    const nh = n.h;
+    const sel = S.selectedCigNode === n.id;
+    const kindIcons = { entry:'👋', qa:'💬', action:'⚡', branch:'?', handoff:'🔴', end:'✓' };
+    return `<g class="cig-node" onclick="selectCigNode('${n.id}')" style="cursor:pointer">
+      <rect x="${nx}" y="${ny}" width="${nw}" height="${nh}" rx="9"
+        fill="${sel ? n.color + '18' : '#fff'}"
+        stroke="${sel ? n.color : '#e0e3ef'}"
+        stroke-width="${sel ? 2 : 1.5}"/>
+      <rect x="${nx+4}" y="${ny + nh/2 - 11}" width="22" height="22" rx="6" fill="${n.color + '22'}"/>
+      <text x="${nx+15}" y="${ny + nh/2 + 5}" text-anchor="middle" font-size="11">${kindIcons[n.kind] || '•'}</text>
+      <text x="${nx + 32}" y="${ny + nh/2 - 4}" font-size="11" font-weight="600" fill="${sel ? n.color : '#1a1d2e'}" font-family="DM Sans,sans-serif">${n.label.length > 14 ? n.label.slice(0,13)+'…' : n.label}</text>
+      ${n.kb  ? `<text x="${nx+nw-26}" y="${ny+nh/2+5}" font-size="8" fill="#2255e8" font-family="DM Sans,sans-serif" font-weight="600">KB</text>` : ''}
+      ${n.api ? `<text x="${nx+nw-(n.kb?14:26)}" y="${ny+nh/2+5}" font-size="8" fill="#8b5cf6" font-family="DM Sans,sans-serif" font-weight="600">API</text>` : ''}
+    </g>`;
+  }).join('');
+
+  svg.innerHTML = defs + edgePaths + nodeEls;
+}
+
+function selectCigNode(id) {
+  S.selectedCigNode = S.selectedCigNode === id ? null : id;
+  drawCigSvg();
+  const node = S.cigData && S.cigData.intents.find(n => n.id === id);
+  const panel = document.querySelector('.tp-body');
+  if (panel && node) {
+    const info = document.getElementById('cig-node-detail');
+    if (info) info.innerHTML = `<strong>${node.label}</strong><br><span class="text-subtle">${node.desc}</span>`;
+  }
+}
+
+/* ===============================================================================
+   KNOWLEDGE GATHER — interactions
+   =============================================================================== */
+function reqSimulateUpload(id) {
+  const req = S.kbRequirements && S.kbRequirements.find(r => r.id === id);
+  if (!req) return;
+  req.status = 'uploading';
+  const el = document.getElementById('kg-' + id);
+  if (el) {
+    el.querySelector('.kg-upload-area') && (el.querySelector('.kg-upload-area').innerHTML =
+      '<div style="font-size:11px;color:#2255e8">⏳ Processing… chunking + embedding</div>');
+  }
+  setTimeout(() => {
+    req.status = 'done';
+    render();
+  }, 1800);
+}
+
+function reqSimulateConnect(id) {
+  const req = S.kbRequirements && S.kbRequirements.find(r => r.id === id);
+  if (!req) return;
+  setTimeout(() => { req.status = 'done'; render(); }, 900);
+}
+
+function reqSkip(id) {
+  const req = S.kbRequirements && S.kbRequirements.find(r => r.id === id);
+  if (req) { req.status = 'skipped'; render(); }
+}
+
+function reqReset(id) {
+  const req = S.kbRequirements && S.kbRequirements.find(r => r.id === id);
+  if (req) { req.status = 'pending'; render(); }
 }
 
 /* ===============================================================================
