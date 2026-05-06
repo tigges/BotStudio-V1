@@ -511,6 +511,10 @@ window.onerror = function(msg, src, line, col, err) {
    =============================================================================== */
 const S = {
   screen: 'dashboard',
+  /* LLM config */
+  llm: { provider: null, apiKey: '', enabled: false, loading: false },
+  llmHistory: [],          /* clean text history for LLM context */
+  llmExtracted: null,      /* CIG extracted from last conversation */
   /* design wizard state */
   designMode: 'template',
   designInput: '',
@@ -2495,6 +2499,162 @@ const YUZU_PRICES = {
   }
 };
 
+/* ─── Yuzu system prompt (injected into LLM on every conversation) ─────── */
+const COCO_SYSTEM_PROMPT = `You are Coco, a warm and professional AI assistant for Yuzu Hair & Beauty, a premium hair salon in Ealing, London.
+
+SALON
+Name: Yuzu Hair & Beauty | Address: 5 Dickens Yard, Ealing, W5 2TD
+Hours: Tuesday–Friday 10am–8pm · Saturday 9am–6pm · Closed Monday & Sunday
+
+STYLIST TIERS
+We have two levels — Senior Stylist (experienced, higher price) and Next Gen Stylist (highly trained, lower price). Always ask which tier if not specified when giving a quote.
+
+SENIOR STYLIST PRICES
+Cut & Style: Ladies £87 (60min) · Gents £58 (45min) · Kids 12& under £29 (30min) · Teen Boys £41 · Teen Girls £52 · Blowdry £58 (40min)
+Colour: Full Head £101 (2h) · Roots £88 (1.5h) · In-between Full £124 · In-between Roots £111 · Illumina £133
+Highlights/Balayage/Foiliage: Full Head £150 (2.5h) · Half Head £115 (2h) · T-Section £89 (1.5h) · Pre-lighten Full £179 (3h) · Pre-lighten Roots £127 (2h)
+Add-ons: Toner £38 · Blending £41 · Colour remover £115 · Long hair below chest +£41
+
+NEXT GEN STYLIST PRICES
+Cut & Style: Ladies £58 (60min) · Kids £23 · Teens Boys & Girls £35 · Blowdry £41
+Colour: Full Head £87 (2h) · Roots £75 (1.5h) · In-between Full £101 · In-between Roots £88
+Highlights: Full Head £98 (2.5h) · Half Head £75 · T-Section £64 · Pre-lighten Full £138 · Pre-lighten Roots £104
+Add-ons: Toner £38 · Blending £41 · Colour remover £104
+
+TREATMENTS
+Nashi: Filler Express £33 · Filler 1,2,3 £46
+K2.0 Keratin: Short £41 · Medium £52 · Long £64 · Extra long £75
+Aura Smoothing (3–4 months): Short £117–165 · Above shoulder £228 · Below shoulder £294 · Long £357 (includes shampoo+conditioner 200ml each)
+
+PACKAGES
+4 Blowdrys £156 (6 months validity) | 4 Roots for price of 3: £264 upfront (16 weeks, all appts booked upfront, non-refundable, can upgrade to full head +£10 on day)
+
+RULES
+- Be natural and conversational — 2–4 sentences unless showing a price list
+- Always distinguish Ladies vs Gents for cuts — ask if unclear
+- When someone requests multiple services: list each with price, show TOTAL price and TOTAL duration
+- Remember gender and stylist tier preference across the conversation
+- For availability: use realistic fictional slots (Tue–Sat this/next week)
+- Use **bold** for prices and key facts
+- Booking confirmation format: service, total price, duration, date/time, ref #YZU-[3digits]
+- Never invent prices not in this prompt. Say "I'll need to check on that" for unknowns`;
+
+/* ─── LLM call (Gemini or Claude, direct from browser) ──────────────────── */
+async function callLLM(userText) {
+  const { provider, apiKey } = S.llm;
+  if (!provider || !apiKey) return null;
+
+  /* build clean history (strip HTML tags for LLM) */
+  const clean = t => t.replace(/<br\s*\/?>/gi,' ').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+  const history = S.llmHistory.slice(-16); /* last 16 turns max */
+
+  try {
+    if (provider === 'gemini') {
+      const contents = history.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+      }));
+      contents.push({ role:'user', parts:[{ text: userText }] });
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            system_instruction: { parts:[{ text: COCO_SYSTEM_PROMPT }] },
+            contents,
+            generationConfig: { maxOutputTokens:512, temperature:0.7 }
+          })
+        }
+      );
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+    }
+
+    if (provider === 'claude') {
+      /* build alternating user/assistant array — Claude requires strict alternation */
+      const msgs = [];
+      history.forEach(m => msgs.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
+      msgs.push({ role:'user', content: userText });
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version':'2023-06-01',
+          'anthropic-dangerous-allow-browser':'true'
+        },
+        body: JSON.stringify({
+          model:'claude-3-5-haiku-20241022',
+          max_tokens:512,
+          system: COCO_SYSTEM_PROMPT,
+          messages: msgs
+        })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error?.message || JSON.stringify(data.error));
+      return data.content?.[0]?.text || null;
+    }
+  } catch(e) {
+    console.error('LLM error:', e);
+    return `⚠️ ${e.message}`;
+  }
+  return null;
+}
+
+/* ─── Pattern extraction from a real conversation ───────────────────────── */
+async function extractPatterns() {
+  const { provider, apiKey } = S.llm;
+  if (!provider || !apiKey || S.llmHistory.length < 4) return;
+  S.llm.loading = true;
+  render();
+
+  const transcript = S.llmHistory.map(m => `${m.role === 'user' ? 'Customer' : 'Coco'}: ${m.content}`).join('\n');
+  const extractPrompt = `Analyze this hair salon chatbot conversation and extract the conversational design pattern as JSON.
+
+CONVERSATION:
+${transcript}
+
+Return ONLY valid JSON in this exact structure:
+{
+  "intents": [{"id":"snake_case","label":"Human label","kind":"entry|qa|action|branch|handoff|end","triggers":["phrase1","phrase2"],"resolution":"rag|calendar_api|template|notify","kb_needed":true/false,"api_needed":null/"calendar"/"email"}],
+  "edges": [{"from":"intent_id","to":"intent_id","label":"optional condition"}],
+  "gaps": ["thing customer asked that bot couldn't answer"],
+  "quality_score": 1-10,
+  "notes": "one sentence summary of the conversation pattern"
+}`;
+
+  try {
+    let raw = null;
+    if (provider === 'gemini') {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ contents:[{ role:'user', parts:[{ text: extractPrompt }] }],
+            generationConfig:{ responseMimeType:'application/json', maxOutputTokens:1024 } })
+        }
+      );
+      const data = await res.json();
+      raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    } else if (provider === 'claude') {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},
+        body: JSON.stringify({ model:'claude-3-5-haiku-20241022', max_tokens:1024,
+          messages:[{ role:'user', content: extractPrompt }] })
+      });
+      const data = await res.json();
+      raw = data.content?.[0]?.text;
+    }
+    /* parse JSON — strip markdown code fences if present */
+    const jsonStr = (raw||'').replace(/```json?\n?/g,'').replace(/```/g,'').trim();
+    S.llmExtracted = JSON.parse(jsonStr);
+  } catch(e) {
+    S.llmExtracted = { error: e.message };
+  }
+  S.llm.loading = false;
+  render();
+}
+
 function calcCombo(services, tier) {
   const prices = YUZU_PRICES[tier] || YUZU_PRICES.senior;
   let total = 0, totalMins = 0, lines = [];
@@ -2591,11 +2751,41 @@ function emuMsgHtml(m, ctx) {
 
 function screenEmulator() {
   const ctx = emuCtx();
-  // Seed Coco greeting if switching context
   if (ctx.isHair && S.emuMessages.length === 1 && S.emuMessages[0].text.includes('Aria')) {
     S.emuMessages = [{ role:'bot', text:`Hi! I\'m <strong>${ctx.name}</strong> from ${ctx.subtitle}. How can I help you today? 💈`, chips:['Book appointment','See services & prices','Ask a question'] }];
     emuDebug.turn = 1; emuDebug.startTime = Date.now(); emuDebug.intent = 'greeting'; emuDebug.conf = 100; emuDebug.node = 'Greet';
   }
+  const llmOn = S.llm.enabled && S.llm.provider;
+  const modeLabel = llmOn ? `🤖 ${S.llm.provider === 'gemini' ? 'Gemini' : 'Claude'} — AI mode` : '⌨️ Keyword mode';
+  const modeBadgeColor = llmOn ? '#10b981' : '#9ca3af';
+
+  /* extracted pattern panel */
+  const extractedPanel = S.llmExtracted ? `
+    <div style="margin-top:14px;background:#fff;border:1.5px solid #2255e8;border-radius:12px;overflow:hidden">
+      <div style="padding:10px 14px;background:#eef2fd;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:12px;font-weight:600;color:#2255e8">${ICO.cigReview} Extracted conversation pattern</span>
+        <span class="badge badge-blue">Quality: ${S.llmExtracted.quality_score || '?'}/10</span>
+      </div>
+      <div style="padding:12px 14px;font-size:11px">
+        ${S.llmExtracted.error ? `<p style="color:#ef4444">${S.llmExtracted.error}</p>` : `
+          <p style="color:#6b7280;margin-bottom:10px;font-style:italic">${S.llmExtracted.notes || ''}</p>
+          <p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;margin-bottom:6px">Intents detected</p>
+          ${(S.llmExtracted.intents||[]).map(n=>`
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+              <span style="width:8px;height:8px;border-radius:50%;background:${n.kind==='action'?'#8b5cf6':n.kind==='qa'?'#2255e8':n.kind==='handoff'?'#ef4444':'#6b7280'};flex-shrink:0"></span>
+              <strong>${n.label}</strong>
+              <span style="color:#9ca3af">(${n.resolution||''})</span>
+              ${n.kb_needed?'<span class="badge badge-blue" style="font-size:9px">KB</span>':''}
+              ${n.api_needed?`<span class="badge badge-purple" style="font-size:9px">${n.api_needed}</span>`:''}
+            </div>`).join('')}
+          ${(S.llmExtracted.gaps||[]).length ? `
+            <p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#f59e0b;margin:10px 0 5px">Gaps found</p>
+            ${S.llmExtracted.gaps.map(g=>`<div style="font-size:11px;color:#92400e;margin-bottom:3px">⚠ ${g}</div>`).join('')}` : ''}
+          <button class="btn btn-primary btn-sm w100" style="margin-top:10px" onclick="addToPatternLib()">Add to pattern library →</button>
+        `}
+      </div>
+    </div>` : '';
+
   return `
   <div class="emu-layout" style="margin-top:0">
     <div class="emu-chat">
@@ -2605,8 +2795,32 @@ function screenEmulator() {
           <div style="font-size:12px;font-weight:600">${ctx.name}</div>
           <div class="text-subtle text-xs">Preview · ${ctx.subtitle}</div>
         </div>
-        <span class="badge badge-green" style="margin-left:auto">● Live</span>
+        <span style="margin-left:auto;font-size:10px;font-weight:600;color:${modeBadgeColor};border:1px solid ${modeBadgeColor};padding:2px 8px;border-radius:10px;cursor:pointer" onclick="toggleLlmSettings()">${modeLabel} ⚙</span>
       </div>
+
+      <!-- AI settings drawer -->
+      <div id="llm-settings" style="display:${S.llm.showSettings?'block':'none'};padding:12px 14px;border-bottom:1px solid #e0e3ef;background:#fafbfe">
+        <p style="font-size:11px;font-weight:600;color:#374151;margin-bottom:8px">AI mode — connect a real LLM</p>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button class="btn btn-sm ${S.llm.provider==='gemini'?'btn-primary':'btn-ghost'}" onclick="setLlmProvider('gemini')">Gemini 2.0</button>
+          <button class="btn btn-sm ${S.llm.provider==='claude'?'btn-primary':'btn-ghost'}" onclick="setLlmProvider('claude')">Claude 3.5</button>
+          ${S.llm.provider ? `<button class="btn btn-sm btn-ghost" onclick="setLlmProvider(null)">Clear</button>` : ''}
+        </div>
+        ${S.llm.provider ? `
+          <input class="fi" id="llm-key-input" type="password"
+            placeholder="${S.llm.provider==='gemini'?'Gemini API key (AIza…)':'Anthropic API key (sk-ant-…)'}"
+            value="${S.llm.apiKey}"
+            oninput="S.llm.apiKey=this.value"
+            style="margin-bottom:8px">
+          <div style="display:flex;gap:6px;align-items:center">
+            <label class="toggle"><input type="checkbox" ${S.llm.enabled?'checked':''} onchange="S.llm.enabled=this.checked;render()"><span class="toggle-slider"></span></label>
+            <span style="font-size:11px;color:#374151">Enable AI responses</span>
+            ${S.llm.apiKey && S.llm.enabled ? `<span style="font-size:10px;color:#10b981;margin-left:4px">● active</span>` : ''}
+          </div>
+          <p style="font-size:10px;color:#9ca3af;margin-top:6px">Key stored in session memory only — cleared when you close the tab. Never sent to our servers.</p>
+        ` : '<p style="font-size:11px;color:#9ca3af">Choose a provider above to connect a real AI.</p>'}
+      </div>
+
       <div class="emu-chat-msgs" id="emu-msgs">
         ${S.emuMessages.map(m => emuMsgHtml(m, ctx)).join('')}
       </div>
@@ -2615,14 +2829,31 @@ function screenEmulator() {
         <button class="btn btn-primary btn-sm" onclick="emuSend()">${ICO.send}</button>
       </div>
     </div>
+
     <div class="emu-debug">
       <div class="emu-debug-hdr">
         <span style="font-size:12px;font-weight:600">Debug panel</span>
-        <span class="badge badge-${ctx.isHair ? 'green' : 'blue'}">${ctx.isHair ? ctx.name : 'LIVE'}</span>
+        <span class="badge badge-${llmOn?'green':'blue'}">${llmOn?S.llm.provider:'keywords'}</span>
       </div>
       <div class="emu-debug-body" id="emu-debug-body">${emuDebugHtml(ctx)}</div>
+      <div style="padding:10px 13px;border-top:1px solid #f0f2f7">
+        <button id="emu-extract-btn" class="btn btn-secondary btn-sm w100"
+          style="display:${S.llmHistory.length>=6?'flex':'none'}"
+          onclick="extractPatterns()">
+          ${S.llm.loading ? '⏳ Extracting…' : `${ICO.cigReview} Extract conversation pattern`}
+        </button>
+        ${!llmOn ? `<p style="font-size:10px;color:#9ca3af;margin-top:6px;text-align:center">Enable AI mode to extract real patterns</p>` : ''}
+      </div>
+      ${extractedPanel}
     </div>
   </div>`;
+}
+
+function toggleLlmSettings() { S.llm.showSettings = !S.llm.showSettings; render(); }
+function setLlmProvider(p) { S.llm.provider = p; S.llm.enabled = false; if (!p) S.llm.apiKey=''; render(); }
+function addToPatternLib() {
+  /* in a real system this would POST to the pattern library API */
+  alert('Pattern added to library! In production this would be stored and available as a template for similar businesses.');
 }
 
 function emuSend(txt) {
@@ -2633,27 +2864,53 @@ function emuSend(txt) {
     txt = fi.value.trim();
     fi.value = '';
   }
-  const msgs = document.getElementById('emu-msgs');
+  const msgsEl = document.getElementById('emu-msgs');
   const userMsg = { role:'user', text: txt };
   S.emuMessages.push(userMsg);
-  if (msgs) {
-    msgs.innerHTML += emuMsgHtml(userMsg, ctx);
-    msgs.scrollTop = msgs.scrollHeight;
-  }
+  S.llmHistory.push({ role:'user', content: txt });
+  if (msgsEl) { msgsEl.innerHTML += emuMsgHtml(userMsg, ctx); msgsEl.scrollTop = msgsEl.scrollHeight; }
   emuDebug.turn++;
-  setTimeout(() => {
-    const reply = emuReply(txt);
-    emuDebug.intent = reply.intent; emuDebug.conf = reply.conf; emuDebug.node = reply.node;
-    const botMsg = { role:'bot', text: reply.text, chips: reply.chips || [], _node: reply.node };
-    S.emuMessages.push(botMsg);
-    const msgsEl = document.getElementById('emu-msgs');
+
+  if (S.llm.enabled && S.llm.provider && S.llm.apiKey) {
+    /* LLM mode — show typing indicator */
+    const typingId = 'typing-' + Date.now();
     if (msgsEl) {
-      msgsEl.innerHTML += emuMsgHtml(botMsg, ctx);
+      msgsEl.innerHTML += `<div id="${typingId}" class="msg bot"><div class="msg-avatar" style="background:#fef9c3;font-size:14px">🍋</div><div class="msg-bubble" style="background:#f8f9fc;border:1.5px solid #e0e3ef"><div class="cd-typing"><span></span><span></span><span></span></div></div></div>`;
       msgsEl.scrollTop = msgsEl.scrollHeight;
     }
-    const dbg = document.getElementById('emu-debug-body');
-    if (dbg) dbg.innerHTML = emuDebugHtml(ctx);
-  }, 650);
+    callLLM(txt).then(reply => {
+      const el = document.getElementById(typingId);
+      if (el) el.remove();
+      const text = reply
+        ? reply.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')
+        : '⚠️ No response from AI — check your API key in settings.';
+      const clean = (reply||'').replace(/<[^>]+>/g,'').replace(/\*\*/g,'');
+      S.llmHistory.push({ role:'assistant', content: clean });
+      emuDebug.intent = 'llm_response'; emuDebug.conf = 99; emuDebug.node = 'LLM';
+      const botMsg = { role:'bot', text, chips:[], _node:'LLM' };
+      S.emuMessages.push(botMsg);
+      if (msgsEl) { msgsEl.innerHTML += emuMsgHtml(botMsg, ctx); msgsEl.scrollTop = msgsEl.scrollHeight; }
+      const dbg = document.getElementById('emu-debug-body');
+      if (dbg) dbg.innerHTML = emuDebugHtml(ctx);
+      /* show extract button once enough turns */
+      if (S.llmHistory.length >= 6) {
+        const ext = document.getElementById('emu-extract-btn');
+        if (ext) ext.style.display = 'block';
+      }
+    });
+  } else {
+    /* keyword mode */
+    setTimeout(() => {
+      const reply = emuReply(txt);
+      emuDebug.intent = reply.intent; emuDebug.conf = reply.conf; emuDebug.node = reply.node;
+      const botMsg = { role:'bot', text: reply.text, chips: reply.chips||[], _node: reply.node };
+      S.llmHistory.push({ role:'assistant', content: reply.text.replace(/<[^>]+>/g,'') });
+      S.emuMessages.push(botMsg);
+      if (msgsEl) { msgsEl.innerHTML += emuMsgHtml(botMsg, ctx); msgsEl.scrollTop = msgsEl.scrollHeight; }
+      const dbg = document.getElementById('emu-debug-body');
+      if (dbg) dbg.innerHTML = emuDebugHtml(ctx);
+    }, 650);
+  }
 }
 
 function emuChipClick(txt) { emuSend(txt); }
@@ -2662,6 +2919,7 @@ function resetEmu() {
   const ctx = emuCtx();
   emuDebug.turn = 1; emuDebug.startTime = Date.now(); emuDebug.intent = 'greeting'; emuDebug.conf = 100; emuDebug.node = 'Greet';
   emuCtx$.gender = null; emuCtx$.tier = null; emuCtx$.services = [];
+  S.llmHistory = []; S.llmExtracted = null;
   S.emuMessages = [{ role:'bot', text: ctx.isHair
     ? `Hi! I\'m <strong>${ctx.name}</strong> from ${ctx.subtitle}. How can I help you today? 💈`
     : `Hi! I\'m ${ctx.name}. How can I help you today?`,
