@@ -487,9 +487,7 @@ svg.cig-svg{width:100%;height:100%;overflow:visible}
     <div class="sb-bots" id="sidebar-bots"></div>
     <div style="padding:8px 16px 10px;border-top:1px solid #f0f2f7;display:flex;align-items:center;justify-content:space-between">
       <span style="font-size:10px;font-weight:600;color:#9ca3af;letter-spacing:.05em">v0.2.0</span>
-      <span style="font-size:10px;color:${S.db.connected?'#10b981':'#c5c9d8'};cursor:pointer" onclick="navigate('settings')" title="${S.db.connected?'Supabase connected':'Click to configure storage'}">
-        ${S.db.connected ? '● Cloud' : 'Local only'}
-      </span>
+      <span id="sb-cloud" style="font-size:10px;color:#c5c9d8;cursor:pointer" onclick="navigate('settings')">Local only</span>
     </div>
   </aside>
   <div id="main">
@@ -791,6 +789,14 @@ function renderSidebar() {
       </div>
     `).join('')}
   `;
+
+  /* update cloud status indicator */
+  const cloudEl = document.getElementById('sb-cloud');
+  if (cloudEl) {
+    cloudEl.style.color = S.db.connected ? '#10b981' : '#c5c9d8';
+    cloudEl.title = S.db.connected ? 'Supabase connected — click to manage' : 'Click to connect cloud storage';
+    cloudEl.textContent = S.db.connected ? (S.db.syncing ? '⏳ Saving…' : '● Cloud') : 'Local only';
+  }
 }
 
 function renderTopbar() {
