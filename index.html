@@ -1193,23 +1193,19 @@ function screenCigReview() {
 }
 
 function cigToScript(cig) {
-  const scripts = {
-    'hair-beauty': [
-      { role:'bot', text:'Hi! I\'m Coco from Yuki\'s Hair Studio. How can I help?', chips:['Book appointment','See services','Ask a question'] },
-      { role:'user', text:'What services do you offer?' },
-      { role:'bot', text:'We offer: <strong>Cut £35</strong> · <strong>Colour £65</strong> · <strong>Highlights £95</strong> · <strong>Blowout £40</strong> and more. Interested in booking?', chips:['Book now','Prices','How long?'] },
-      { role:'user', text:'How much is a cut and colour?' },
-      { role:'bot', text:'A Cut + Colour is <strong>£85</strong> and takes about <strong>2 hours</strong>. Want to book one?', chips:['Book it','See availability'] },
-      { role:'user', text:'Can I book Saturday?' },
-      { role:'bot', text:'I have these Saturday slots free:', chips:['10:00am','1:00pm','3:30pm'] },
-      { role:'user', text:'1pm please, I\'m Sarah' },
-      { role:'bot', text:'<strong>Booked!</strong> Sarah — Cut + Colour, Saturday 1:00pm at Yuki\'s. Ref #YHS-001. Confirmation sent ✓' },
-    ]
-  };
-  const turns = scripts[cig.industry] || scripts['hair-beauty'];
-  return turns.map(t => `
+  return [
+    { role:'bot', text:'Hi! I\'m Coco, the Yuzu Hair & Beauty assistant. How can I help?', chips:['Book appointment','See services & prices','Ask a question'] },
+    { role:'user', text:'What services do you offer?' },
+    { role:'bot', text:'We offer cuts for ladies, gents & kids, colour, highlights, balayage, and treatments. We have <strong>Senior</strong> and <strong>Next Gen</strong> stylist tiers. Is this for ladies, gents, or kids?', chips:['Ladies prices','Gents prices','Kids & teens'] },
+    { role:'user', text:'Ladies — how much is a cut?' },
+    { role:'bot', text:'Ladies Wash, Cut & Style: <strong>£87</strong> (Senior Stylist) or <strong>£58</strong> (Next Gen Stylist). Want to add colour?', chips:['Book cut','Add colour','Highlights'] },
+    { role:'user', text:'Can I book Saturday?' },
+    { role:'bot', text:'Saturday slots available: <strong>9am · 11am · 1pm · 3pm</strong>. Which works for you?', chips:['9am','11am','1pm','3pm'] },
+    { role:'user', text:'1pm please, I\'m Sarah' },
+    { role:'bot', text:'<strong>Booked!</strong> Sarah — Ladies Cut & Style, Saturday 1pm at Yuzu Hair & Beauty, 5 Dickens Yard Ealing. Ref #YZU-482 ✓ 🍋' },
+  ].map(t => `
     <div class="script-turn">
-      <div class="script-actor ${t.role}">${t.role === 'bot' ? '🤖 Coco' : '👤 Customer'}</div>
+      <div class="script-actor ${t.role}">${t.role === 'bot' ? '🍋 Coco' : '👤 Customer'}</div>
       <div class="script-text ${t.role}">${t.text}</div>
       ${t.chips ? `<div class="script-chips">${t.chips.map(c => `<span class="script-chip">${c}</span>`).join('')}</div>` : ''}
     </div>`).join('');
@@ -2223,71 +2219,142 @@ function emuCtx() {
   const isHair = S.cigData && S.cigData.industry === 'hair-beauty';
   return {
     isHair,
-    name:     isHair ? 'Coco'                          : S.botSetupData.displayName,
-    subtitle: isHair ? 'Yuki\'s Hair Studio'           : 'Support Bot',
-    avatar:   isHair ? '💈'                            : '🤖',
-    avatarBg: isHair ? '#fce7f3'                       : '#eef2fd',
+    name:     isHair ? 'Coco'                             : S.botSetupData.displayName,
+    subtitle: isHair ? 'Yuzu Hair & Beauty, Ealing'       : 'Support Bot',
+    salon:    'Yuzu Hair & Beauty',
+    avatar:   isHair ? '🍋'                               : '🤖',
+    avatarBg: isHair ? '#fef9c3'                          : '#eef2fd',
     greeting: isHair
-      ? 'Hi! I\'m Coco, Yuki\'s Hair Studio assistant. How can I help you today?'
+      ? 'Hi! I\'m Coco, the Yuzu Hair & Beauty assistant. How can I help you today?'
       : 'Hi! I\'m Aria. How can I help you today?',
   };
 }
 
-/* ─── Hair salon scripted responses ──────────────────────────────────────── */
+/* --- Yuzu Hair & Beauty - real price list (PDF extracted May 2026) ----------
+   Two tiers: Senior Stylist (S) and Next Gen Stylist (NG)
+   Gender-aware: detects ladies / gents / kids from message
+   -------------------------------------------------------------------------- */
+function detectGender(txt) {
+  if (/\bgent|male\b|man\b|\bmen\b|\bboy\b|\bhis\b|\bhe\b|barber/i.test(txt)) return 'male';
+  if (/\blady|ladies|female|woman|women|\bgirl\b|\bher\b|\bshe\b/i.test(txt)) return 'female';
+  if (/\bkid|child|junior|teen|young/i.test(txt)) return 'kids';
+  return null;
+}
+
 const COCO_RESPONSES = [
-  { pattern: /what.*offer|what.*service|what.*do|services|menu/i,
+  /* services overview */
+  { pattern: /what.*offer|what.*service|what.*do\b|your service|menu|tell me.*offer/i,
     intent:'explore_services', conf:96, node:'Explore services',
-    reply: `We offer a full range of hair services:\n\n💇 **Women's Cut** — £35 · 45 min\n🎨 **Cut + Colour** — £85 · 2 hrs\n✨ **Highlights** — £95+ · 2.5 hrs\n💨 **Blowout** — £40 · 45 min\n✂️ **Men's Cut** — £25 · 30 min\n👶 **Kids' Cut** — £18 · 30 min\n\nWould you like to book any of these?`,
-    chips:['Book now','Prices','How long?'] },
+    reply: `Here's everything we offer at Yuzu Hair & Beauty:\n\n<strong>Cuts & Style</strong> — ladies, gents, kids & teens\n<strong>Colour</strong> — full head, roots, in-between, Illumina\n<strong>Highlights & Balayage</strong> — full, half, T-section, foiliage\n<strong>Treatments</strong> — Nashi, K2.0 Keratin, Aura Smoothing\n<strong>Packages</strong> — 4 blowdrys for £156, 4 roots for price of 3\n\nWe have two stylist levels — Senior Stylist and Next Gen Stylist. Is this for ladies, gents, or kids?`,
+    chips:['Ladies prices','Gents prices','Kids & teens','Treatments','Packages'] },
 
-  { pattern: /how much|price|cost|charge|fee|£/i,
-    intent:'price_inquiry', conf:93, node:'Price inquiry',
-    reply: `Here\'s our current price list:\n\n💇 Women\'s Cut — **£35**\n🎨 Cut + Colour — **£85**\n✨ Highlights — **from £95**\n💨 Blowout — **£40**\n✂️ Men\'s Cut — **£25**\n👶 Kids\' Cut — **£18**\n\nAll prices include a wash and style. Want to book?`,
-    chips:['Book appointment','How long does it take?'] },
+  /* ladies cut */
+  { pattern: /ladies|women|female|her cut|my hair|my cut/i,
+    intent:'price_inquiry', conf:94, node:'Price inquiry',
+    reply: `Ladies cut & style at Yuzu:\n\n<strong>Senior Stylist</strong>\n✂️ Wash, Cut & Style — <strong>£87</strong>\n💨 Blowdry — <strong>£58</strong>\n\n<strong>Next Gen Stylist</strong>\n✂️ Wash, Cut & Style — <strong>£58</strong>\n💨 Blowdry — <strong>£41</strong>\n\nBoth include wash and professional finish. Want to add colour or a treatment?`,
+    chips:['Book ladies cut','See colour prices','Highlights & balayage','Treatments'] },
 
-  { pattern: /how long|duration|time|hour|minute/i,
-    intent:'duration_info', conf:88, node:'Duration info',
-    reply: `Typical service durations:\n\n✂️ Cut — **45 minutes**\n🎨 Cut + Colour — **2 hours**\n✨ Full highlights — **2.5–3 hours**\n💨 Blowout — **45 minutes**\n✂️ Men\'s Cut — **30 minutes**\n\nWe\'ll always let you know the exact timing when you book.`,
-    chips:['Book now','See prices'] },
+  /* gents cut */
+  { pattern: /\bgent|\bmale\b|\bman\b|\bmen\b|barber|boy.*cut|his hair/i,
+    intent:'price_inquiry', conf:94, node:'Price inquiry',
+    reply: `Gents services at Yuzu:\n\n<strong>Senior Stylist</strong>\n✂️ Gents Wash, Cut & Style — <strong>£58</strong>\n\nIncludes professional wash, precision cut, and styling finish. Want to book?`,
+    chips:['Book gents cut','See all services','Opening hours'] },
 
-  { pattern: /book|appoint|reserv|schedul|slot|availab/i,
-    intent:'book_appointment', conf:95, node:'Book appointment',
-    reply: `I\'d love to book that for you! 🗓\n\nI have these slots available this week:\n\n**Saturday 10 May**\n[10:00am] [1:00pm] [3:30pm]\n\n**Sunday 11 May**\n[11:00am] [2:00pm]\n\nWhich works for you?`,
-    chips:['10:00am Sat','1:00pm Sat','3:30pm Sat','Another day?'] },
+  /* kids & teens */
+  { pattern: /\bkid|child|junior|\bteen|young|13.16|under 12|12 &/i,
+    intent:'price_inquiry', conf:92, node:'Price inquiry',
+    reply: `Kids & teen prices at Yuzu:\n\n<strong>Senior Stylist</strong>\n👶 Kids (12 & under) — <strong>£29</strong>\n✂️ Teen Boys (13–16) — <strong>£41</strong>\n✂️ Teen Girls (13–16) — <strong>£52</strong>\n\n<strong>Next Gen Stylist</strong>\n👶 Kids (12 & under) — <strong>£23</strong>\n✂️ Teens Boys & Girls (13–16) — <strong>£35</strong>\n\nMorning slots work great for kids — want me to check availability?`,
+    chips:['Check kids slots','Book teen appointment'] },
 
-  { pattern: /saturday|sunday|monday|tuesday|wednesday|thursday|friday|weekend|weekday|when|day/i,
-    intent:'book_appointment', conf:91, node:'Book appointment',
-    reply: `I have great availability this week! Here are open slots:\n\n**Sat 10 May** · 10am · 1pm · 3:30pm\n**Sun 11 May** · 11am · 2pm\n**Mon 12 May** · 9:30am · 12pm · 4pm\n\nWhich day and time works best for you?`,
-    chips:['Saturday','Sunday','Monday'] },
+  /* colour */
+  { pattern: /\bcolou?r\b|full head|roots|in.between|illumina|\btint\b/i,
+    intent:'price_inquiry', conf:91, node:'Price inquiry',
+    reply: `Colour prices at Yuzu:\n\n<strong>Senior Stylist</strong>\n🎨 Full Head — <strong>£101</strong>\n🌿 Roots — <strong>£88</strong>\n🔄 In-between Full Head — <strong>£124</strong>\n🔄 In-between Roots — <strong>£111</strong>\n✨ Illumina Colouring — <strong>£133</strong>\n\n<strong>Next Gen Stylist</strong>\n🎨 Full Head — <strong>£87</strong>\n🌿 Roots — <strong>£75</strong>\n🔄 In-between Full Head — <strong>£101</strong>\n🔄 In-between Roots — <strong>£88</strong>\n\nToner +£38 · Blending +£41 if needed. Want to book?`,
+    chips:['Book colour','Highlights & balayage','Root package'] },
 
-  { pattern: /colour|color|highlight|tint|balayage|ombre/i,
+  /* highlights / balayage */
+  { pattern: /highlight|balayage|foil|ombre|pre.?light|t.?section|half head/i,
+    intent:'price_inquiry', conf:90, node:'Price inquiry',
+    reply: `Highlights, Balayage & Foiliage at Yuzu:\n\n<strong>Senior Stylist</strong>\n✨ Full Head — <strong>£150</strong>\n✨ Half Head — <strong>£115</strong>\n✨ T-Section — <strong>£89</strong>\n🌊 Pre-lighten Full Head — <strong>£179</strong>\n🌊 Pre-lighten Roots — <strong>£127</strong>\n\n<strong>Next Gen Stylist</strong>\n✨ Full Head — <strong>£98</strong>\n✨ Half Head — <strong>£75</strong>\n✨ T-Section — <strong>£64</strong>\n🌊 Pre-lighten Full Head — <strong>£138</strong>\n🌊 Pre-lighten Roots — <strong>£104</strong>\n\nLong hair (below chest): +£41 · Toner: £38 · Blending: £41`,
+    chips:['Book highlights','See colour prices','Book appointment'] },
+
+  /* treatments */
+  { pattern: /treatment|nashi|keratin|k2\.?0|aura|smooth|filler|moisture|repair/i,
     intent:'price_inquiry', conf:89, node:'Price inquiry',
-    reply: `Our colour services:\n\n🎨 **Cut + Colour** — £85 (most popular!)\n✨ **Full Highlights** — from £95\n🌿 **Balayage** — from £120\n🎨 **Tint only** — from £55\n\nAll include a toner and blow-dry. Fancy booking one in?`,
-    chips:['Book colour service','See all prices'] },
+    reply: `Hair treatments at Yuzu:\n\n🌿 <strong>Nashi</strong>\n• Filler Express — <strong>£33</strong>\n• Filler 1,2,3 Intense Moisture — <strong>£46</strong>\n\n💆 <strong>K2.0 Keratin</strong>\n• Short — <strong>£41</strong> · Medium — <strong>£52</strong>\n• Long — <strong>£64</strong> · Extra long — <strong>£75</strong>\n\n✨ <strong>Aura Smoothing</strong> (3–4 months)\n• Short — <strong>£117–165</strong> · Above shoulder — <strong>£228</strong>\n• Below shoulder — <strong>£294</strong> · Long — <strong>£357</strong>\n<em>Includes maintenance shampoo 200ml + conditioner 200ml</em>`,
+    chips:['Book a treatment','4–6 months option','See all prices'] },
 
-  { pattern: /cancel|rebook|reschedul|change|move/i,
+  /* packages */
+  { pattern: /package|deal|4 blow|4 root|bundle|offer\b|save/i,
+    intent:'price_inquiry', conf:87, node:'Price inquiry',
+    reply: `Yuzu packages:\n\n💨 <strong>4 Blowdrys — £156</strong> (valid 6 months)\n£39 each vs £58/£41 walk-in · Saves up to £76\nNo cuts/extensions · No-show = 1 deducted · Non-refundable\n\n🌿 <strong>4 Roots for Price of 3 — £264</strong> (valid 16 weeks)\nAll 4 booked upfront · Upgrade to full head +£10 on day\nNon-refundable\n\nWant to grab one?`,
+    chips:['Blowdry package','Roots package','Book single appointment'] },
+
+  /* blowdry */
+  { pattern: /\bblow.?dry|blowout|style only/i,
+    intent:'price_inquiry', conf:88, node:'Price inquiry',
+    reply: `Blowdry at Yuzu:\n\n<strong>Senior Stylist</strong> — <strong>£58</strong>\n<strong>Next Gen Stylist</strong> — <strong>£41</strong>\n\n💡 Better value: <strong>4 Blowdrys for £156</strong> (6 months) — just £39 each with Senior Stylist.\n\nBook single or package?`,
+    chips:['Book blowdry','Get the package','Add a cut'] },
+
+  /* how much / price generic */
+  { pattern: /how much|price|cost|charge|fee|what.*pay|expensive/i,
+    intent:'price_inquiry', conf:89, node:'Price inquiry',
+    reply: `Quick price guide at Yuzu:\n\n✂️ Ladies Cut & Style — <strong>£58–87</strong>\n✂️ Gents Cut & Style — <strong>£58</strong>\n👶 Kids — <strong>£23–29</strong>\n🎨 Full Colour — <strong>£87–101</strong>\n✨ Full Highlights — <strong>£98–150</strong>\n💨 Blowdry — <strong>£41–58</strong>\n💆 Treatments — <strong>£33–357</strong>\n\nPrices vary by stylist tier. Which service interests you?`,
+    chips:['Ladies prices','Gents prices','Colour & highlights','Treatments','Packages'] },
+
+  /* how long */
+  { pattern: /how long|duration|how man.*hour|how man.*min/i,
+    intent:'duration_info', conf:87, node:'Duration info',
+    reply: `Approximate timings at Yuzu:\n\n✂️ Cut & Style — <strong>45–60 min</strong>\n💨 Blowdry — <strong>30–45 min</strong>\n🎨 Full Colour — <strong>2–2.5 hrs</strong>\n✨ Full Highlights/Balayage — <strong>2.5–3.5 hrs</strong>\n🌊 Pre-lighten — <strong>3–4 hrs</strong>\n💆 K2.0 Keratin — <strong>1.5–2 hrs</strong>\n✨ Aura Smoothing — <strong>2.5–3 hrs</strong>\n\nExact time confirmed at booking. Ready to book?`,
+    chips:['Book appointment','See prices'] },
+
+  /* booking intent */
+  { pattern: /book|appoint|reserv|schedul|come in|slot|availab/i,
+    intent:'book_appointment', conf:95, node:'Book appointment',
+    reply: `I'd love to book that for you at Yuzu! 🍋\n\nOpening hours:\n📅 <strong>Tue–Fri:</strong> 10am – 8pm\n📅 <strong>Saturday:</strong> 9am – 6pm\n❌ Closed Monday & Sunday\n\nWhat day and time suits you, and is this for ladies, gents, or kids?`,
+    chips:['Tuesday–Friday','Saturday','See services'] },
+
+  /* specific day */
+  { pattern: /saturday|sunday|monday|tuesday|wednesday|thursday|friday|this week|next week/i,
+    intent:'book_appointment', conf:92, node:'Book appointment',
+    reply: `Available slots this week at Yuzu:\n\n📅 <strong>Thu 8 May</strong> — 11am · 2pm · 5pm · 7pm\n📅 <strong>Fri 9 May</strong> — 10am · 1pm · 4pm · 7pm\n📅 <strong>Sat 10 May</strong> — 9am · 11am · 1pm · 3pm\n\nWhich day, time, and service would you like?`,
+    chips:['9am Sat','11am Sat','1pm Sat','Thu 11am','Fri 10am'] },
+
+  /* opening hours */
+  { pattern: /open|hours|close|shut|when.*open|monday|sunday/i,
+    intent:'open_qa', conf:86, node:'Open Q&A',
+    reply: `Yuzu Hair & Beauty opening times:\n\n📅 <strong>Tuesday – Friday:</strong> 10am – 8pm\n📅 <strong>Saturday:</strong> 9am – 6pm\n❌ <strong>Monday & Sunday:</strong> Closed\n\nWe're at <strong>5 Dickens Yard, Ealing, W5 2TD</strong>. Want to book?`,
+    chips:['Book appointment','Get directions'] },
+
+  /* location */
+  { pattern: /where|location|address|find|direc|map|park|ealing|get there/i,
     intent:'open_qa', conf:84, node:'Open Q&A',
-    reply: `No problem! Our cancellation policy:\n\n• Cancel **24+ hours** before — fully refunded\n• Cancel **under 24 hours** — 50% charge applies\n• Need to reschedule? Just reply here and I\'ll sort it\n\nWant me to help you rebook?`,
-    chips:['Yes, rebook please','Cancel instead'] },
+    reply: `We're at:\n📍 <strong>5 Dickens Yard, Ealing, W5 2TD</strong>\n\n🚇 Ealing Broadway (Central & District lines) — 5 min walk\n🚗 Pay & display parking at Dickens Yard\n🚌 Multiple bus routes via Ealing Broadway\n\nOpen Tue–Fri 10am–8pm, Sat 9am–6pm. Closed Mon & Sun.`,
+    chips:['Book appointment','Opening hours','See prices'] },
 
-  { pattern: /park|where|location|address|find|direc|map/i,
-    intent:'open_qa', conf:82, node:'Open Q&A',
-    reply: `We\'re at **12 Bloom Street, W1F 4AB** 📍\n\n🚗 **Parking:** Free 2-hour parking on Bridge Lane (2 min walk)\n🚇 **Tube:** Oxford Circus — 5 min walk\n🚌 **Bus:** Routes 55, 73, 98 stop outside\n\nSee you soon! Anything else I can help with?` },
+  /* cancel / rebook */
+  { pattern: /cancel|rebook|reschedul|change.*appoint|no.?show|refund/i,
+    intent:'open_qa', conf:83, node:'Open Q&A',
+    reply: `Yuzu cancellation policy:\n\n✅ <strong>24+ hours notice</strong> — no charge\n⚠️ <strong>Under 24 hours</strong> — 50% fee applies\n❌ <strong>No-show</strong> — full service fee charged\n\nPackage holders: no-show deducts one session. Packages are non-refundable.\n\nNeed to reschedule? Let me know and I'll find you a new slot.`,
+    chips:['Rebook appointment','Book new appointment'] },
 
-  { pattern: /confirm|thank|perfect|great|amazing|booked|yes/i,
+  /* confirmation */
+  { pattern: /^(yes|yeah|yep|ok|okay|perfect|great|sounds good|book it|confirm|go ahead)/i,
     intent:'confirm_booking', conf:97, node:'Confirm booking',
-    reply: `**Booked!** 🎉\n\nHere\'s your confirmation:\n\n📋 **Cut + Colour**\n📅 Saturday 10 May · 1:00pm\n📍 Yuki\'s Hair Studio, 12 Bloom St\n👤 With: Yuki\n🔖 Ref: #YHS-${Math.floor(Math.random()*900+100)}\n\nConfirmation sent to your email. See you Saturday! 💈`,
-    chips:['Add to calendar','Get directions'] },
+    reply: `Wonderful — booking confirmed at Yuzu Hair & Beauty! 🍋\n\n📋 <strong>Cut & Colour — Senior Stylist</strong>\n📅 <strong>Saturday 10 May · 1:00pm</strong>\n📍 5 Dickens Yard, Ealing, W5 2TD\n🔖 Ref: <strong>#YZU-RNDN</strong>\n\nConfirmation sent to your email. See you Saturday!\n<em>Reminder: cancellations under 24hrs may incur a 50% charge.</em>`,
+    chips:['Add to calendar','Get directions','Book another'] },
 
-  { pattern: /gents|men|male|barber|beard/i,
-    intent:'explore_services', conf:86, node:'Explore services',
-    reply: `We do! Our men\'s services:\n\n✂️ **Men\'s Cut** — £25 · 30 min\n🧔 **Cut + Beard Trim** — £35 · 45 min\n\nYuki and the team are experienced with all hair types. Want to book?`,
-    chips:['Book men\'s cut','See all services'] },
+  /* toner / blending */
+  { pattern: /toner|blending|colour remov|color remov/i,
+    intent:'price_inquiry', conf:85, node:'Price inquiry',
+    reply: `Colour add-ons at Yuzu:\n\n🎨 <strong>Toner</strong> — £38\n🌀 <strong>Blending</strong> — £41\n🧪 <strong>Colour remover</strong> — £115 (Senior) / £104 (Next Gen)\n\nUsually added alongside a colour or highlight. Want to book?`,
+    chips:['Book colour appointment','See all colour prices'] },
 
-  { pattern: /kid|child|boy|girl|junior|young/i,
-    intent:'explore_services', conf:88, node:'Explore services',
-    reply: `Yes, we welcome children! 👶\n\n✂️ **Kids\' Cut** (under 12) — £18 · 30 min\n\nWe recommend booking a quieter morning slot. Want me to check availability?`,
-    chips:['Check kids\' slots','See adult services'] },
+  /* stylist tiers */
+  { pattern: /next gen|junior|cheaper|less expens|budget|price differ|two price|which stylist/i,
+    intent:'price_inquiry', conf:88, node:'Price inquiry',
+    reply: `We have two stylist levels at Yuzu:\n\n⭐ <strong>Senior Stylist</strong> — our most experienced team. Best for complex colour, balayage, and intricate cuts.\n\n✨ <strong>Next Gen Stylist</strong> — highly trained, supervised, excellent quality at a lower price. Ladies cut £58 vs £87.\n\nBoth deliver the Yuzu standard. Next Gen is great for regular cuts and refreshes. Which would you like prices for?`,
+    chips:['Senior Stylist prices','Next Gen prices','Book appointment'] },
 ];
 
 const GENERIC_RESPONSES = [
