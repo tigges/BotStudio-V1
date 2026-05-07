@@ -13,6 +13,14 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import websocket from '@fastify/websocket';
 
+/* log env at startup so Railway Deploy Logs show what's loaded */
+console.log('[startup] PORT:', process.env.PORT);
+console.log('[startup] NODE_ENV:', process.env.NODE_ENV);
+console.log('[startup] providers: claude=%s gemini=%s supabase=%s',
+  !!process.env.ANTHROPIC_API_KEY,
+  !!process.env.GEMINI_API_KEY,
+  !!process.env.SUPABASE_URL);
+
 import { chatRestRoute, chatWsRoute } from './routes/chat.js';
 import { botsRoute } from './routes/bots.js';
 import { authRoute, registerAuthMiddleware } from './routes/auth.js';
