@@ -1,0 +1,10 @@
+{
+  "name": "botstudio",
+  "version": "0.2.0",
+  "description": "BotStudio — root package, delegates to api/",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "install": "cd api && npm install",
+    "start": "cd api && node server.js"
+  }
+}
