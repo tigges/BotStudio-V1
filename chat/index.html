@@ -117,7 +117,7 @@
   /* ── Read params from URL ─────────────────────────── */
   const params  = new URLSearchParams(location.search);
   const BOT_KEY = params.get('k') || params.get('key') || '';
-  const API     = params.get('api') || 'https://botstudio-api.railway.app';
+  const API     = params.get('api') || 'https://botstudio-v1-production.up.railway.app';
   const COLOR   = params.get('color') || '#2255e8';
   const NAME    = params.get('name') || 'Assistant';
   const AVATAR  = params.get('avatar') || '🤖';

@@ -19,7 +19,7 @@
   const script   = document.currentScript || document.querySelector('script[data-key]');
   const CFG = {
     botKey:   script?.dataset.key      || '',
-    apiBase:  script?.dataset.api      || 'https://botstudio-api.railway.app',
+    apiBase:  script?.dataset.api      || 'https://botstudio-v1-production.up.railway.app',
     botName:  script?.dataset.name     || 'Assistant',
     color:    script?.dataset.color    || '#2255e8',
     position: script?.dataset.position || 'bottom-right',
