@@ -58,6 +58,7 @@ export async function callLLM({ messages, system, maxTokens = 600, provider }) {
     ? ['claude', 'gemini']
     : ['gemini', 'claude'];
 
+  const errors = [];
   for (const p of order) {
     try {
       if (p === 'claude' && process.env.ANTHROPIC_API_KEY) {
@@ -67,10 +68,11 @@ export async function callLLM({ messages, system, maxTokens = 600, provider }) {
         return await callGemini({ messages, system, maxTokens });
       }
     } catch (e) {
-      console.warn(`[llm] ${p} failed:`, e.message, '— trying next');
+      console.error(`[llm] ${p} failed:`, e.message);
+      errors.push(`${p}: ${e.message}`);
     }
   }
-  throw new Error('No LLM provider available. Set ANTHROPIC_API_KEY or GEMINI_API_KEY.');
+  throw new Error(`LLM calls failed — ${errors.join(' | ') || 'no API keys found'}`);
 }
 
 /* ─── System prompt builder ──────────────────────────────────────────────────── */

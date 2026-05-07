@@ -49,6 +49,22 @@ await fastify.register(chatWsRoute);
 await fastify.register(botsRoute);
 await fastify.register(authRoute);
 
+/* ─── Quick LLM test ────────────────────────────────────────────────────────── */
+fastify.get('/api/test-llm', async (req, reply) => {
+  const { callLLM } = await import('./lib/llm.js');
+  try {
+    const text = await callLLM({
+      messages: [{ role: 'user', content: 'Say exactly: OK' }],
+      system: 'You are a test bot. Reply with one word only.',
+      maxTokens: 10,
+      provider: 'gemini',
+    });
+    return reply.send({ ok: true, response: text });
+  } catch (e) {
+    return reply.code(500).send({ ok: false, error: e.message });
+  }
+});
+
 /* ─── Health check ───────────────────────────────────────────────────────────── */
 fastify.get('/api/health', async () => ({
   ok: true,
