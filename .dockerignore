@@ -1,0 +1,11 @@
+node_modules/
+api/node_modules/
+.env
+*.log
+.git/
+deploy/
+widget/
+chat/
+botstudio.html
+index.html
+README.md
