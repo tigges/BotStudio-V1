@@ -7,7 +7,10 @@ export function db() {
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
       throw new Error('SUPABASE_URL and SUPABASE_SERVICE_KEY are required');
     }
-    _client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+    _client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, {
+      realtime: { enabled: false },   /* we use REST only — no WebSocket needed */
+      auth: { persistSession: false },
+    });
   }
   return _client;
 }

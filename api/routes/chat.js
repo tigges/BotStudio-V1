@@ -27,9 +27,44 @@ function genRef(prefix = 'BOT') {
 }
 
 /* ─── Core chat handler (shared by REST + WS) ───────────────────────────────── */
+/* demo bot config — used when embed key isn't in DB yet */
+const DEMO_BOT = {
+  id: 'demo',
+  config: {
+    displayName: 'Coco',
+    name: 'Coco',
+    businessName: 'Yuzu Hair & Beauty',
+    address: '5 Dickens Yard, Ealing, W5 2TD',
+    tone: 'Friendly',
+    lang: 'English',
+    llmProvider: 'gemini',
+  },
+  kb_text: `Yuzu Hair & Beauty — 5 Dickens Yard, Ealing W5 2TD
+Hours: Tuesday-Friday 10am-8pm, Saturday 9am-6pm. Closed Monday & Sunday.
+
+SENIOR STYLIST PRICES
+Ladies Wash Cut & Style: £87 (60min) | Gents Wash Cut & Style: £58 (45min)
+Kids (12 & under): £29 | Teen Boys (13-16): £41 | Teen Girls (13-16): £52
+Blowdry: £58 | Full Head Colour: £101 | Roots: £88 | Illumina: £133
+Full Highlights/Balayage: £150 | Half Head: £115 | T-Section: £89
+Pre-lighten Full: £179 | Toner: £38 | Blending: £41 | Long hair extra: +£41
+
+NEXT GEN STYLIST PRICES
+Ladies Wash Cut & Style: £58 | Kids: £23 | Teens: £35 | Blowdry: £41
+Full Head Colour: £87 | Roots: £75 | Full Highlights: £98 | Half: £75 | T-Section: £64
+
+TREATMENTS: Nashi Filler Express £33 | Filler 1,2,3 £46
+K2.0 Keratin: Short £41 | Medium £52 | Long £64 | Extra long £75
+Aura Smoothing (3-4 months): Short £117-165 | Above shoulder £228 | Below shoulder £294 | Long £357
+
+PACKAGES: 4 Blowdrys £156 (6 months) | 4 Roots for price of 3: £264 (16 weeks)`,
+  cig: { name: 'Hair Salon Booking', industry: 'hair-beauty' },
+};
+
 async function handleMessage({ botKey, sessionId, message, history = [], sessionData = {} }) {
-  const bot = await getBotByKey(botKey);
-  if (!bot) return { error: 'Bot not found or not live', chips: [] };
+  let bot = null;
+  try { bot = await getBotByKey(botKey); } catch (e) { console.warn('[chat] DB lookup failed:', e.message); }
+  if (!bot) bot = DEMO_BOT; /* fall back to demo config */
 
   const config  = bot.config  || {};
   const intent  = detectIntent(message);
