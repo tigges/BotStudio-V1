@@ -61,26 +61,31 @@ export async function callGemini({ messages, system, maxTokens = 600, model }) {
   }));
 
   const modelsToTry = model ? [model] : GEMINI_MODELS;
-  let lastErr = 'no models tried';
+  const allErrs = [];
 
   for (const m of modelsToTry) {
-    const res = await fetch(`${GEMINI_BASE}/${m}:generateContent?key=${key}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: system ? { parts: [{ text: system }] } : undefined,
-        contents,
-        generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 },
-      }),
-    });
+    try {
+      const res = await fetch(`${GEMINI_BASE}/${m}:generateContent?key=${key}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: system ? { parts: [{ text: system }] } : undefined,
+          contents,
+          generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 },
+        }),
+      });
 
-    const data = await res.json();
-    if (!data.error) return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const data = await res.json();
+      if (!data.error) return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    lastErr = `${m}: ${data.error.message}`;
-    console.warn('[gemini] failed:', lastErr);
+      const e = `${m}(${res.status}): ${data.error?.message || JSON.stringify(data.error)}`;
+      allErrs.push(e);
+      console.warn('[gemini] failed:', e);
+    } catch (e) {
+      allErrs.push(`${m}: fetch error: ${e.message}`);
+    }
   }
-  throw new Error(`Gemini failed — ${lastErr}`);
+  throw new Error(`Gemini all models failed:\n${allErrs.join('\n')}`);
 }
 
 /* ─── Router ─────────────────────────────────────────────────────────────────── */

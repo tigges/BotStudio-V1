@@ -49,6 +49,23 @@ await fastify.register(chatWsRoute);
 await fastify.register(botsRoute);
 await fastify.register(authRoute);
 
+/* ─── List available Gemini models ──────────────────────────────────────────── */
+fastify.get('/api/gemini-models', async (req, reply) => {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) return reply.code(400).send({ error: 'GEMINI_API_KEY not set' });
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+    const data = await res.json();
+    if (data.error) return reply.code(400).send({ error: data.error.message });
+    const models = (data.models || [])
+      .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+      .map(m => m.name.replace('models/', ''));
+    return reply.send({ count: models.length, models });
+  } catch (e) {
+    return reply.code(500).send({ error: e.message });
+  }
+});
+
 /* ─── Quick LLM test ────────────────────────────────────────────────────────── */
 fastify.get('/api/test-llm', async (req, reply) => {
   const { callLLM } = await import('./lib/llm.js');
