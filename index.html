@@ -1437,6 +1437,22 @@ function screenCigReview() {
         <input class="fi-inline fi" id="cig-edge-label" placeholder="label (optional)" style="width:120px">
         <button class="btn btn-secondary btn-sm" onclick="addCigEdge('${sel.id}')">Add edge</button>
       </div>
+
+      <div style="margin-top:12px;padding:10px 12px;background:#f8f9fc;border-radius:8px;border:1px solid #e0e3ef">
+        <p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;margin-bottom:7px">Insert this intent between two existing nodes</p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select class="fs" id="insert-from" style="flex:1;min-width:120px">
+            <option value="">After: select source…</option>
+            ${cig.intents.filter(n=>n.id!==sel.id).map(n=>`<option value="${n.id}">${n.label}</option>`).join('')}
+          </select>
+          <select class="fs" id="insert-to" style="flex:1;min-width:120px">
+            <option value="">Before: select target…</option>
+            ${cig.intents.filter(n=>n.id!==sel.id).map(n=>`<option value="${n.id}">${n.label}</option>`).join('')}
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="insertCigBetween('${sel.id}')">Insert here</button>
+        </div>
+        <p style="font-size:10px;color:#9ca3af;margin-top:5px">Removes the direct edge between source→target, wires this intent in between.</p>
+      </div>
     </div>` : `
     <div style="padding:10px 14px;margin-bottom:14px;background:#eef2fd;border-radius:10px;font-size:12px;color:#2255e8;cursor:default">
       💡 Click any intent node above to edit its label, description, KB/API bindings, and connections.
@@ -1601,6 +1617,52 @@ function addCigEdge(fromId) {
 function removeCigEdge(fromId, toId) {
   if (!S.cigData) return;
   S.cigData.edges = S.cigData.edges.filter(e => !(e.from === fromId && e.to === toId));
+  render();
+}
+
+/* Insert intent `id` between two existing connected intents in one click */
+function insertCigBetween(id) {
+  const fromEl = document.getElementById('insert-from');
+  const toEl   = document.getElementById('insert-to');
+  const fromId = fromEl?.value;
+  const toId   = toEl?.value;
+  if (!fromId || !toId || !S.cigData) {
+    alert('Select both a source and target intent to insert between.'); return;
+  }
+
+  /* 1. Remove the direct from → to edge (may or may not exist) */
+  S.cigData.edges = S.cigData.edges.filter(e => !(e.from === fromId && e.to === toId));
+
+  /* 2. Add from → new intent */
+  if (!S.cigData.edges.find(e => e.from === fromId && e.to === id)) {
+    S.cigData.edges.push({ from: fromId, to: id });
+  }
+
+  /* 3. Add new intent → to */
+  if (!S.cigData.edges.find(e => e.from === id && e.to === toId)) {
+    S.cigData.edges.push({ from: id, to: toId });
+  }
+
+  /* 4. Reorder in array: move new intent to sit just after fromId */
+  const arr = S.cigData.intents;
+  const fromIdx = arr.findIndex(n => n.id === fromId);
+  const curIdx  = arr.findIndex(n => n.id === id);
+  if (fromIdx !== -1 && curIdx !== -1 && curIdx !== fromIdx + 1) {
+    const [node] = arr.splice(curIdx, 1);
+    arr.splice(fromIdx + 1, 0, node);
+  }
+
+  /* 5. Position the new node visually between from and to */
+  const fromNode = arr.find(n => n.id === fromId);
+  const toNode   = arr.find(n => n.id === toId);
+  const newNode  = arr.find(n => n.id === id);
+  if (fromNode && toNode && newNode) {
+    newNode.x = (fromNode.x + toNode.x) / 2;
+    newNode.y = (fromNode.y + toNode.y) / 2;
+    newNode.w = newNode.w || 130;
+    newNode.h = newNode.h || 42;
+  }
+
   render();
 }
 
