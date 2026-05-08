@@ -542,6 +542,7 @@ const S = {
   },
   llmHistory: [],          /* clean text history for LLM context */
   llmExtracted: null,      /* CIG extracted from last conversation */
+  cigScriptEdit: false,   /* script edit mode toggle */
   /* design wizard state */
   designMode: 'template',
   designInput: '',
@@ -1371,8 +1372,81 @@ function screenCigReview() {
       ${n.label}
     </span>`).join('');
 
+  const sel = S.selectedCigNode ? cig.intents.find(n => n.id === S.selectedCigNode) : null;
   const scriptHtml = cigToScript(cig);
   const reqHtml = cigToRequirements(cig);
+
+  /* CIG node edit panel (shown when a node is selected) */
+  const nodeEditPanel = sel ? `
+    <div class="card mb14" style="border-color:${sel.color};background:#fafbfe">
+      <div class="flex items-center gap10 mb12">
+        <div style="width:32px;height:32px;border-radius:9px;background:${sel.color}22;border:2px solid ${sel.color};display:flex;align-items:center;justify-content:center;font-size:16px">
+          ${{entry:'👋',qa:'💬',action:'⚡',branch:'?',handoff:'🔴',end:'✓'}[sel.kind]||'•'}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:#1a1d2e">Editing: ${sel.label}</div>
+          <div style="font-size:11px;color:#9ca3af">${sel.kind} intent · click a different node or click again to close</div>
+        </div>
+        <button class="btn btn-ghost btn-xs" onclick="deleteCigNode('${sel.id}')">🗑 Delete intent</button>
+        <button class="btn btn-ghost btn-xs" onclick="S.selectedCigNode=null;render()">✕ Close</button>
+      </div>
+      <div class="g2 mb10">
+        <div class="fg" style="margin:0">
+          <label class="fl">Label</label>
+          <input class="fi" value="${sel.label}" oninput="updateCigNode('${sel.id}','label',this.value)">
+        </div>
+        <div class="fg" style="margin:0">
+          <label class="fl">Kind</label>
+          <select class="fs" onchange="updateCigNode('${sel.id}','kind',this.value)">
+            ${['entry','qa','action','branch','handoff','end'].map(k =>
+              `<option ${sel.kind===k?'selected':''}>${k}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="fg mb10">
+        <label class="fl">Description <span class="text-subtle">(shown in requirements, guides the AI)</span></label>
+        <textarea class="fta" rows="2" oninput="updateCigNode('${sel.id}','desc',this.value)">${sel.desc||''}</textarea>
+      </div>
+      <div class="g2 mb10">
+        <div class="fg" style="margin:0">
+          <label class="fl">KB source <span class="text-subtle">(optional)</span></label>
+          <input class="fi" placeholder="e.g. prices, services, faq" value="${sel.kb||''}"
+            oninput="updateCigNode('${sel.id}','kb',this.value)">
+        </div>
+        <div class="fg" style="margin:0">
+          <label class="fl">API binding <span class="text-subtle">(optional)</span></label>
+          <input class="fi" placeholder="e.g. calendar, email, notify" value="${sel.api||''}"
+            oninput="updateCigNode('${sel.id}','api',this.value)">
+        </div>
+      </div>
+      <div class="fg mb4">
+        <label class="fl">Edges from this intent</label>
+        ${cig.edges.filter(e => e.from === sel.id).map(e => {
+          const to = cig.intents.find(n => n.id === e.to);
+          return `<div class="flex items-center gap6 mb4">
+            <span style="flex:1;font-size:12px;color:#374151">→ ${to?.label||e.to} ${e.label?`<span class="badge badge-amber" style="font-size:9px">${e.label}</span>`:''}</span>
+            <button class="btn btn-ghost btn-xs" onclick="removeCigEdge('${sel.id}','${e.to}')">✕</button>
+          </div>`;
+        }).join('') || '<span class="text-subtle text-xs">No outgoing edges</span>'}
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select class="fs" id="cig-edge-target" style="flex:1;min-width:140px">
+          <option value="">Add edge → select target…</option>
+          ${cig.intents.filter(n=>n.id!==sel.id).map(n=>`<option value="${n.id}">${n.label}</option>`).join('')}
+        </select>
+        <input class="fi-inline fi" id="cig-edge-label" placeholder="label (optional)" style="width:120px">
+        <button class="btn btn-secondary btn-sm" onclick="addCigEdge('${sel.id}')">Add edge</button>
+      </div>
+    </div>` : `
+    <div style="padding:10px 14px;margin-bottom:14px;background:#eef2fd;border-radius:10px;font-size:12px;color:#2255e8;cursor:default">
+      💡 Click any intent node above to edit its label, description, KB/API bindings, and connections.
+      <button class="btn btn-primary btn-sm" style="margin-left:10px;float:right" onclick="addCigIntent()">+ Add intent</button>
+    </div>`;
+
+  /* script in edit mode */
+  const scriptBody = S.cigScriptEdit
+    ? cigToScriptEditable(cig)
+    : scriptHtml;
 
   return `
     <div class="intent-strip">${intentStrip}</div>
@@ -1380,9 +1454,12 @@ function screenCigReview() {
     <div class="cig-wrap mb14">
       <div class="cig-header">
         <span class="cig-title">Conversational Intent Graph — ${cig.name}</span>
-        <div class="cig-legend">
-          ${[['entry','#6b7280','Entry'],['qa','#2255e8','Q&A (RAG)'],['action','#8b5cf6','Action (API)'],['branch','#f59e0b','Branch'],['handoff','#ef4444','Escalate'],['end','#374151','End']].map(([k,c,l]) => `
-            <span class="cig-leg-item"><span class="cig-leg-dot" style="background:${c}"></span>${l}</span>`).join('')}
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+          <button class="btn btn-ghost btn-xs" onclick="addCigIntent()">${ICO.plus} Add intent</button>
+          <div class="cig-legend">
+            ${[['entry','#6b7280','Entry'],['qa','#2255e8','Q&A (RAG)'],['action','#8b5cf6','Action (API)'],['branch','#f59e0b','Branch'],['handoff','#ef4444','Escalate'],['end','#374151','End']].map(([k,c,l]) => `
+              <span class="cig-leg-item"><span class="cig-leg-dot" style="background:${c}"></span>${l}</span>`).join('')}
+          </div>
         </div>
       </div>
       <div class="cig-canvas">
@@ -1390,13 +1467,19 @@ function screenCigReview() {
       </div>
     </div>
 
+    ${nodeEditPanel}
+
     <div class="three-panel">
       <div class="tp-panel">
         <div class="tp-hdr">
           <span class="tp-title">💬 Conversation script</span>
-          <button class="btn btn-ghost btn-xs">Edit</button>
+          <div style="display:flex;gap:5px">
+            ${S.cigScriptEdit
+              ? `<button class="btn btn-primary btn-xs" onclick="S.cigScriptEdit=false;render()">✓ Done</button>`
+              : `<button class="btn btn-secondary btn-xs" onclick="S.cigScriptEdit=true;render()">✏ Edit</button>`}
+          </div>
         </div>
-        <div class="tp-body">${scriptHtml}</div>
+        <div class="tp-body" id="cig-script-body">${scriptBody}</div>
       </div>
       <div class="tp-panel">
         <div class="tp-hdr">
@@ -1405,7 +1488,8 @@ function screenCigReview() {
         </div>
         <div class="tp-body">
           ${cig.intents.map(n => `
-            <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;cursor:pointer;padding:4px 6px;border-radius:6px;${S.selectedCigNode===n.id?'background:#eef2fd':''}"
+              onclick="selectCigNode('${n.id}')">
               <span style="width:10px;height:10px;border-radius:50%;background:${kindColors[n.kind]};flex-shrink:0"></span>
               <span style="font-size:12px;font-weight:500;color:#1a1d2e;flex:1">${n.label}</span>
               ${n.kb ? `<span class="badge badge-blue" style="font-size:9px">KB</span>` : ''}
@@ -1460,6 +1544,87 @@ function cigToRequirements(cig) {
         <button class="btn btn-ghost btn-xs" onclick="navigate('kb-gather')">${r.type==='kb'?'Upload':'Connect'}</button>
       </div>
     </div>`).join('');
+}
+
+/* ===============================================================================
+   CIG EDITING FUNCTIONS
+   =============================================================================== */
+function updateCigNode(id, prop, val) {
+  if (!S.cigData) return;
+  const n = S.cigData.intents.find(x => x.id === id);
+  if (n) n[prop] = val;
+  /* re-render just the intent strip + graph without full page reload */
+  requestAnimationFrame(() => drawCigSvg());
+}
+
+function deleteCigNode(id) {
+  if (!S.cigData) return;
+  S.cigData.intents = S.cigData.intents.filter(n => n.id !== id);
+  S.cigData.edges   = S.cigData.edges.filter(e => e.from !== id && e.to !== id);
+  S.selectedCigNode = null;
+  render();
+}
+
+function addCigIntent() {
+  if (!S.cigData) return;
+  const id = 'intent_' + Date.now();
+  const maxX = Math.max(...S.cigData.intents.map(n => n.x + n.w), 0);
+  S.cigData.intents.push({
+    id, label: 'New intent', kind: 'qa', color: '#9ca3af',
+    x: Math.min(maxX + 20, 780), y: 300, w: 130, h: 42,
+    kb: null, api: null, desc: 'Describe what this intent handles'
+  });
+  S.selectedCigNode = id;
+  render();
+}
+
+function addCigEdge(fromId) {
+  const targetEl = document.getElementById('cig-edge-target');
+  const labelEl  = document.getElementById('cig-edge-label');
+  const toId     = targetEl?.value;
+  if (!toId || !S.cigData) return;
+  const exists = S.cigData.edges.find(e => e.from === fromId && e.to === toId);
+  if (exists) return;
+  const label = labelEl?.value.trim() || undefined;
+  S.cigData.edges.push({ from: fromId, to: toId, ...(label ? { label } : {}) });
+  render();
+}
+
+function removeCigEdge(fromId, toId) {
+  if (!S.cigData) return;
+  S.cigData.edges = S.cigData.edges.filter(e => !(e.from === fromId && e.to === toId));
+  render();
+}
+
+/* editable conversation script — bot turns become textareas */
+function cigToScriptEditable(cig) {
+  const turns = [
+    { role:'bot',  text: cig.scriptCustom?.t0 || `Hi! I\'m Coco, the Yuzu Hair & Beauty assistant. How can I help?`, chips:['Book appointment','See services & prices','Ask a question'], key:'t0' },
+    { role:'user', text: 'What services do you offer?' },
+    { role:'bot',  text: cig.scriptCustom?.t2 || `Just to make sure I show you the right options — is this for a lady, gentleman, or child/teen?`, chips:['Lady','Gentleman','Child / teen'], key:'t2' },
+    { role:'user', text: '(customer answers)' },
+    { role:'bot',  text: cig.scriptCustom?.t4 || `Here are the options for you…`, key:'t4' },
+    { role:'user', text: 'Can I book Saturday?' },
+    { role:'bot',  text: cig.scriptCustom?.t6 || `I have these slots available…`, key:'t6' },
+  ];
+
+  if (!cig.scriptCustom) cig.scriptCustom = {};
+
+  return turns.map(t => {
+    if (t.role === 'user') return `
+      <div class="script-turn">
+        <div class="script-actor user">👤 Customer</div>
+        <div class="script-text user" style="font-style:italic;color:#9ca3af">${t.text}</div>
+      </div>`;
+    return `
+      <div class="script-turn">
+        <div class="script-actor bot">🍋 Coco</div>
+        <textarea class="fta" rows="2" style="font-size:11px;border-color:#c7d2fe"
+          oninput="if(!S.cigData.scriptCustom)S.cigData.scriptCustom={};S.cigData.scriptCustom['${t.key}']=this.value"
+        >${t.text}</textarea>
+        ${t.chips ? `<div class="script-chips">${t.chips.map(c => `<span class="script-chip">${c}</span>`).join('')}</div>` : ''}
+      </div>`;
+  }).join('');
 }
 
 /* ===============================================================================
