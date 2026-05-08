@@ -3305,6 +3305,49 @@ async function callLLM(userText) {
 }
 
 /* ─── Pattern extraction from a real conversation ───────────────────────── */
+/* Robust JSON parser — handles common LLM formatting issues */
+function parseFlexibleJson(raw) {
+  /* 1. strip markdown code fences */
+  let s = raw.replace(/```json?\s*/gi, '').replace(/```/g, '').trim();
+
+  /* 2. extract the outermost {...} block */
+  const start = s.indexOf('{');
+  const end   = s.lastIndexOf('}');
+  if (start === -1 || end === -1) throw new Error('No JSON object found in response');
+  s = s.slice(start, end + 1);
+
+  /* 3. try plain parse first */
+  try { return JSON.parse(s); } catch(_) {}
+
+  /* 4. sanitise common LLM JSON issues */
+  let clean = s
+    /* trailing commas before } or ] */
+    .replace(/,(\s*[}\]])/g, '$1')
+    /* unquoted object keys:  key:  →  "key": */
+    .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)(\s*):/g, (m, pre, key, sp) =>
+      `${pre}"${key}"${sp}:`)
+    /* single-quoted strings — only safe when no apostrophes inside */
+    .replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"');
+
+  try { return JSON.parse(clean); } catch(_) {}
+
+  /* 5. last resort: regex-extract the fields we care about */
+  const score = s.match(/quality_score['":\s]+(\d+)/)?.[1];
+  const notes = s.match(/notes['":\s]+"([^"]+)"/)?.[1]
+             || s.match(/notes['":\s]+'([^']+)'/)?.[1];
+  const gapMatches = [...s.matchAll(/"([^"]{10,100})"/g)].map(m=>m[1]);
+
+  return {
+    quality_score: score ? parseInt(score) : null,
+    notes:         notes || 'Pattern extracted (JSON was partially malformed)',
+    gaps:          gapMatches.slice(0, 5),
+    intents:       [],
+    edges:         [],
+    _partial:      true,
+    _raw:          s.slice(0, 300),
+  };
+}
+
 async function extractPatterns() {
   const { provider, apiKey, proxyUrl } = S.llm;
   if (!provider || (!apiKey && !proxyUrl) || S.llmHistory.length < 4) return;
@@ -3317,8 +3360,10 @@ async function extractPatterns() {
 CONVERSATION:
 ${transcript}
 
-Return ONLY valid JSON:
-{"intents":[{"id":"snake_case","label":"Human label","kind":"entry|qa|action|branch|handoff|end","triggers":["phrase1"],"resolution":"rag|calendar_api|template|notify","kb_needed":true,"api_needed":null}],"edges":[{"from":"id","to":"id","label":"optional"}],"gaps":["unanswered questions"],"quality_score":7,"notes":"one sentence summary"}`;
+IMPORTANT: Return ONLY a raw JSON object. No markdown, no code fences, no explanation.
+Use DOUBLE quotes for all keys and string values. No trailing commas. No comments.
+Example structure:
+{"intents":[{"id":"greet","label":"Greet","kind":"entry","triggers":["hi","hello"],"resolution":"template","kb_needed":false,"api_needed":null},{"id":"book","label":"Book appointment","kind":"action","triggers":["book","when can I come"],"resolution":"calendar_api","kb_needed":false,"api_needed":"calendar"}],"edges":[{"from":"greet","to":"book","label":""}],"gaps":["customer asked X but bot could not answer"],"quality_score":7,"notes":"Brief summary of the conversation pattern"}`;
 
   try {
     let raw = null;
@@ -3363,10 +3408,7 @@ Return ONLY valid JSON:
       raw = data.reply || data.response;
     }
 
-    const jsonStr = (raw||'').replace(/```json?\n?/g,'').replace(/```/g,'').trim();
-    /* find JSON object in response */
-    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-    S.llmExtracted = JSON.parse(jsonMatch?.[0] || jsonStr);
+    S.llmExtracted = parseFlexibleJson(raw || '');
   } catch(e) {
     S.llmExtracted = { error: e.message };
   }
@@ -3489,21 +3531,30 @@ function screenEmulator() {
         <span class="badge badge-blue">Quality: ${S.llmExtracted.quality_score || '?'}/10</span>
       </div>
       <div style="padding:12px 14px;font-size:11px">
-        ${S.llmExtracted.error ? `<p style="color:#ef4444">${S.llmExtracted.error}</p>` : `
-          <p style="color:#6b7280;margin-bottom:10px;font-style:italic">${S.llmExtracted.notes || ''}</p>
-          <p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;margin-bottom:6px">Intents detected</p>
-          ${(S.llmExtracted.intents||[]).map(n=>`
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
-              <span style="width:8px;height:8px;border-radius:50%;background:${n.kind==='action'?'#8b5cf6':n.kind==='qa'?'#2255e8':n.kind==='handoff'?'#ef4444':'#6b7280'};flex-shrink:0"></span>
-              <strong>${n.label}</strong>
-              <span style="color:#9ca3af">(${n.resolution||''})</span>
-              ${n.kb_needed?'<span class="badge badge-blue" style="font-size:9px">KB</span>':''}
-              ${n.api_needed?`<span class="badge badge-purple" style="font-size:9px">${n.api_needed}</span>`:''}
-            </div>`).join('')}
+        ${S.llmExtracted.error ? `
+          <div style="color:#ef4444;font-size:11px;margin-bottom:8px">⚠ Parse error: ${S.llmExtracted.error}</div>
+          <div style="font-size:10px;color:#9ca3af">The LLM responded but the JSON was malformed. Try extracting again — it usually works on the second attempt.</div>
+          <button class="btn btn-secondary btn-sm w100" style="margin-top:8px" onclick="extractPatterns()">↺ Try again</button>
+        ` : `
+          <p style="color:#6b7280;margin-bottom:8px;font-style:italic">${S.llmExtracted.notes || ''}</p>
+          ${S.llmExtracted._partial ? `<div style="font-size:10px;color:#f59e0b;margin-bottom:8px">⚠ Partial result — JSON was fixed automatically. Core data below.</div>` : ''}
+          ${(S.llmExtracted.intents||[]).length ? `
+            <p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;margin-bottom:6px">Intents detected</p>
+            ${(S.llmExtracted.intents||[]).map(n=>`
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+                <span style="width:8px;height:8px;border-radius:50%;background:${n.kind==='action'?'#8b5cf6':n.kind==='qa'?'#2255e8':n.kind==='handoff'?'#ef4444':'#6b7280'};flex-shrink:0"></span>
+                <strong>${n.label}</strong>
+                <span style="color:#9ca3af">(${n.resolution||''})</span>
+                ${n.kb_needed?'<span class="badge badge-blue" style="font-size:9px">KB</span>':''}
+                ${n.api_needed?`<span class="badge badge-purple" style="font-size:9px">${n.api_needed}</span>`:''}
+              </div>`).join('')}` : ''}
           ${(S.llmExtracted.gaps||[]).length ? `
             <p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#f59e0b;margin:10px 0 5px">Gaps found</p>
             ${S.llmExtracted.gaps.map(g=>`<div style="font-size:11px;color:#92400e;margin-bottom:3px">⚠ ${g}</div>`).join('')}` : ''}
-          <button class="btn btn-primary btn-sm w100" style="margin-top:10px" onclick="addToPatternLib()">Add to pattern library →</button>
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <button class="btn btn-primary btn-sm" style="flex:1" onclick="addToPatternLib()">Save to library →</button>
+            <button class="btn btn-ghost btn-sm" onclick="extractPatterns()">↺ Re-extract</button>
+          </div>
         `}
       </div>
     </div>` : '';
@@ -3574,7 +3625,7 @@ function screenEmulator() {
 function toggleLlmSettings() { S.llm.showSettings = !S.llm.showSettings; render(); }
 function setLlmProvider(p) { S.llm.provider = p; S.llm.enabled = false; if (!p) S.llm.apiKey=''; render(); }
 async function addToPatternLib() {
-  if (!S.llmExtracted || S.llmExtracted.error) return;
+  if (!S.llmExtracted || (S.llmExtracted.error && !S.llmExtracted.notes)) return;
   const saved = [];
   if (S.db.connected) { await dbSavePattern(S.llmExtracted); await dbSaveConversation(); saved.push('Supabase'); }
   if (S.gd.connected) { await gdSavePattern(S.llmExtracted); await gdSaveConversation({ turns: S.llmHistory, extracted: S.llmExtracted }); saved.push('Google Drive'); }
