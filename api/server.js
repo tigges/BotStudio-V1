@@ -71,9 +71,9 @@ fastify.get('/api/test-llm', async (req, reply) => {
   const { callLLM } = await import('./lib/llm.js');
   try {
     const text = await callLLM({
-      messages: [{ role: 'user', content: 'Say exactly: OK' }],
-      system: 'Reply with one word only.',
-      maxTokens: 20,
+      messages: [{ role: 'user', content: 'Reply with exactly this word: WORKING' }],
+      system: 'You are a test assistant. Always reply with exactly one word as instructed.',
+      maxTokens: 50,
       provider: req.query.provider || 'gemini',
     });
     return reply.send({ ok: true, response: text });

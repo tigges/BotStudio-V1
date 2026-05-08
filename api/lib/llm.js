@@ -46,15 +46,11 @@ export async function callClaude({ messages, system, maxTokens = 600, model }) {
 /* ─── Gemini — tries models in order ────────────────────────────────────────── */
 /* fallback static list — used if discovery fails */
 const GEMINI_MODELS_FALLBACK = [
-  'gemini-2.0-flash-exp',
+  'gemini-2.5-flash',    /* best free model, May 2026 */
+  'gemini-2.0-flash',
   'gemini-2.0-flash-lite',
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-flash-8b-latest',
+  'gemini-flash-latest',
   'gemini-1.5-flash',
-  'gemini-1.5-pro-latest',
-  'gemini-1.5-pro',
-  'gemini-pro',
-  'gemini-1.0-pro',
 ];
 
 let _geminiModelsCache = null;
