@@ -962,7 +962,7 @@ function afterRender() {
     wizardUpdatePreview();
   }
   if (S.screen === 'cig-review' && S.cigData) {
-    requestAnimationFrame(() => drawCigSvg());
+    requestAnimationFrame(() => { drawCigSvg(); });
   }
   if (S.screen === 'design-input' && S.designMode === 'chat') {
     scrollChatDown();
@@ -1484,20 +1484,28 @@ function screenCigReview() {
       <div class="tp-panel">
         <div class="tp-hdr">
           <span class="tp-title">⋮ Intent flow</span>
-          <button class="btn btn-ghost btn-xs" onclick="navigate('flow')">Open in builder</button>
+          <button class="btn btn-ghost btn-xs" onclick="compileCigToFlow()">Open in builder ↗</button>
         </div>
         <div class="tp-body">
-          ${cig.intents.map(n => `
-            <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;cursor:pointer;padding:4px 6px;border-radius:6px;${S.selectedCigNode===n.id?'background:#eef2fd':''}"
-              onclick="selectCigNode('${n.id}')">
-              <span style="width:10px;height:10px;border-radius:50%;background:${kindColors[n.kind]};flex-shrink:0"></span>
-              <span style="font-size:12px;font-weight:500;color:#1a1d2e;flex:1">${n.label}</span>
-              ${n.kb ? `<span class="badge badge-blue" style="font-size:9px">KB</span>` : ''}
-              ${n.api ? `<span class="badge badge-purple" style="font-size:9px">API</span>` : ''}
+          ${cig.intents.map((n, idx) => `
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+              <div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0">
+                <button onclick="moveCigIntent('${n.id}','up')"
+                  style="width:16px;height:14px;border:1px solid #e0e3ef;border-radius:3px;background:#fff;cursor:pointer;font-size:9px;padding:0;display:flex;align-items:center;justify-content:center;${idx===0?'opacity:.3;cursor:default':''}">▲</button>
+                <button onclick="moveCigIntent('${n.id}','down')"
+                  style="width:16px;height:14px;border:1px solid #e0e3ef;border-radius:3px;background:#fff;cursor:pointer;font-size:9px;padding:0;display:flex;align-items:center;justify-content:center;${idx===cig.intents.length-1?'opacity:.3;cursor:default':''}">▼</button>
+              </div>
+              <div style="flex:1;cursor:pointer;padding:4px 6px;border-radius:6px;display:flex;align-items:center;gap:7px;${S.selectedCigNode===n.id?'background:#eef2fd':''}"
+                onclick="selectCigNode('${n.id}')">
+                <span style="width:10px;height:10px;border-radius:50%;background:${kindColors[n.kind]};flex-shrink:0"></span>
+                <span style="font-size:12px;font-weight:500;color:#1a1d2e;flex:1">${n.label}</span>
+                ${n.kb ? `<span class="badge badge-blue" style="font-size:9px">KB</span>` : ''}
+                ${n.api ? `<span class="badge badge-purple" style="font-size:9px">API</span>` : ''}
+              </div>
             </div>
             ${(cig.edges.filter(e => e.from === n.id)).map(e => {
               const to = cig.intents.find(i => i.id === e.to);
-              return to ? `<div style="font-size:10px;color:#9ca3af;margin:-4px 0 8px 17px">→ ${to.label}${e.label ? ` (${e.label})` : ''}</div>` : '';
+              return to ? `<div style="font-size:10px;color:#9ca3af;margin:-2px 0 6px 24px">→ ${to.label}${e.label ? ` (${e.label})` : ''}</div>` : '';
             }).join('')}
           `).join('')}
         </div>
@@ -1594,6 +1602,108 @@ function removeCigEdge(fromId, toId) {
   if (!S.cigData) return;
   S.cigData.edges = S.cigData.edges.filter(e => !(e.from === fromId && e.to === toId));
   render();
+}
+
+/* ─── Intent reordering ─────────────────────────────────────────────── */
+function moveCigIntent(id, dir) {
+  if (!S.cigData) return;
+  const arr = S.cigData.intents;
+  const idx = arr.findIndex(n => n.id === id);
+  if (idx === -1) return;
+  const next = idx + (dir === 'up' ? -1 : 1);
+  if (next < 0 || next >= arr.length) return;
+  [arr[idx], arr[next]] = [arr[next], arr[idx]];
+  render();
+}
+
+/* ─── CIG node drag (reposition in SVG) ────────────────────────────── */
+const cigDrag = { active: false, id: null, sx: 0, sy: 0, nx: 0, ny: 0, t: 0 };
+
+function cigNodeMouseDown(e, id) {
+  e.stopPropagation();
+  const n = S.cigData?.intents.find(x => x.id === id);
+  if (!n) return;
+  cigDrag.active = true; cigDrag.id = id;
+  cigDrag.sx = e.clientX; cigDrag.sy = e.clientY;
+  cigDrag.nx = n.x; cigDrag.ny = n.y; cigDrag.t = Date.now();
+  document.addEventListener('mousemove', onCigMove);
+  document.addEventListener('mouseup',   onCigUp);
+}
+
+function onCigMove(e) {
+  if (!cigDrag.active) return;
+  const n = S.cigData?.intents.find(x => x.id === cigDrag.id);
+  if (!n) return;
+  const svg = document.getElementById('cig-svg');
+  const rect = svg?.getBoundingClientRect();
+  if (!rect) return;
+  const scaleX = rect.width / 900;
+  n.x = Math.max(0, cigDrag.nx + (e.clientX - cigDrag.sx) / scaleX);
+  n.y = Math.max(0, cigDrag.ny + (e.clientY - cigDrag.sy));
+  drawCigSvg();
+}
+
+function onCigUp(e) {
+  const wasDrag = cigDrag.active && (Date.now() - cigDrag.t > 150 ||
+    Math.abs(e.clientX - cigDrag.sx) > 5 || Math.abs(e.clientY - cigDrag.sy) > 5);
+  cigDrag.active = false;
+  document.removeEventListener('mousemove', onCigMove);
+  document.removeEventListener('mouseup',   onCigUp);
+  /* if it was just a click (not a drag) let selectCigNode fire */
+  if (!wasDrag) selectCigNode(cigDrag.id);
+}
+
+/* ─── Compile CIG → Flow nodes + connections ─────────────────────────── */
+function layoutCigAsFlow(intents, edges) {
+  /* BFS from first entry node to assign depth levels */
+  const entry = intents.find(n => n.kind === 'entry') || intents[0];
+  const depth = {}; const queue = [[entry?.id, 0]]; const seen = new Set();
+  while (queue.length) {
+    const [id, d] = queue.shift();
+    if (seen.has(id)) continue;
+    seen.add(id); depth[id] = d;
+    edges.filter(e => e.from === id).forEach(e => queue.push([e.to, d + 1]));
+  }
+  /* any node not reached by BFS gets placed below */
+  intents.forEach((n, i) => { if (!(n.id in depth)) depth[n.id] = Object.keys(depth).length + i; });
+
+  /* group by depth, assign x/y */
+  const byDepth = {};
+  intents.forEach(n => { const d = depth[n.id] ?? 0; (byDepth[d] = byDepth[d] || []).push(n.id); });
+  const pos = {};
+  Object.entries(byDepth).forEach(([d, ids]) => {
+    const gap = 70; const startY = Math.max(40, 200 - (ids.length * gap) / 2);
+    ids.forEach((id, i) => { pos[id] = { x: parseInt(d) * 190 + 40, y: startY + i * gap }; });
+  });
+  return pos;
+}
+
+function compileCigToFlow() {
+  if (!S.cigData) return;
+  const kindToType = { entry:'start', qa:'message', action:'action', branch:'condition', handoff:'action', end:'end' };
+  const pos = layoutCigAsFlow(S.cigData.intents, S.cigData.edges);
+
+  /* numeric ID map */
+  const idMap = {};
+  S.cigData.intents.forEach((n, i) => { idMap[n.id] = i + 1; });
+
+  S.flowNodes = S.cigData.intents.map((n, i) => ({
+    id:    idMap[n.id],
+    type:  kindToType[n.kind] || 'message',
+    label: n.label,
+    sub:   n.desc || '',
+    x:     pos[n.id]?.x ?? 40 + i * 190,
+    y:     pos[n.id]?.y ?? 100,
+  }));
+
+  S.flowConnections = S.cigData.edges.map((e, i) => ({
+    id:    i + 1,
+    from:  idMap[e.from],
+    to:    idMap[e.to],
+    ...(e.label ? { label: e.label } : {}),
+  })).filter(e => e.from && e.to);
+
+  navigate('flow');
 }
 
 /* editable conversation script — bot turns become textareas */
@@ -3553,7 +3663,7 @@ function drawCigSvg() {
     const nh = n.h;
     const sel = S.selectedCigNode === n.id;
     const kindIcons = { entry:'👋', qa:'💬', action:'⚡', branch:'?', handoff:'🔴', end:'✓' };
-    return `<g class="cig-node" onclick="selectCigNode('${n.id}')" style="cursor:pointer">
+    return `<g class="cig-node" onmousedown="cigNodeMouseDown(event,'${n.id}')" style="cursor:grab">
       <rect x="${nx}" y="${ny}" width="${nw}" height="${nh}" rx="9"
         fill="${sel ? n.color + '18' : '#fff'}"
         stroke="${sel ? n.color : '#e0e3ef'}"
