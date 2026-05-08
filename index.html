@@ -3368,7 +3368,17 @@ Example structure:
   try {
     let raw = null;
 
-    if (provider === 'gemini' && apiKey) {
+    /* if proxy is set, always use the Railway extract endpoint regardless of provider
+       — it avoids CORS, quota limits, and the Coco system prompt being injected */
+    if (proxyUrl) {
+      const res = await fetch(`${proxyUrl}/api/extract-pattern`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ transcript })
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'extraction endpoint returned error');
+      raw = data.raw;
+    } else if (provider === 'gemini' && apiKey) {
       /* discover best model */
       let model = 'gemini-2.5-flash';
       try {
@@ -3390,22 +3400,16 @@ Example structure:
       raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     } else if (provider === 'claude') {
-      /* Claude must go through proxy (CORS) */
-      const endpoint = proxyUrl
-        ? `${proxyUrl}/api/chat`
-        : null;
-      if (!endpoint) throw new Error('Claude needs a Proxy URL — enter your Railway URL in Settings');
-      const res = await fetch(endpoint, {
+      /* Claude must go through proxy (CORS) — use dedicated extract endpoint
+         (NOT /api/chat which injects the Coco system prompt and returns chat responses) */
+      if (!proxyUrl) throw new Error('Claude needs a Proxy URL — enter your Railway URL in Settings');
+      const res = await fetch(`${proxyUrl}/api/extract-pattern`, {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
-          botKey: 'yuzu_live_demo',
-          message: extractPrompt,
-          history: [],
-          _raw: true   /* flag: return raw LLM response */
-        })
+        body: JSON.stringify({ transcript })
       });
       const data = await res.json();
-      raw = data.reply || data.response;
+      if (!data.ok) throw new Error(data.error || 'extraction endpoint error');
+      raw = data.raw;
     }
 
     S.llmExtracted = parseFlexibleJson(raw || '');

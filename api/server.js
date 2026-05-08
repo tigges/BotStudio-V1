@@ -66,6 +66,37 @@ fastify.get('/api/gemini-models', async (req, reply) => {
   }
 });
 
+/* ─── Pattern extraction endpoint (no bot persona, raw JSON output) ─────────── */
+fastify.post('/api/extract-pattern', async (req, reply) => {
+  const { transcript } = req.body;
+  if (!transcript) return reply.code(400).send({ error: 'transcript required' });
+
+  const { callLLM } = await import('./lib/llm.js');
+
+  const prompt = `Analyze this chatbot conversation and extract the conversational design pattern as JSON.
+
+CONVERSATION:
+${transcript}
+
+Return ONLY a raw JSON object. No markdown, no code fences, no explanation before or after.
+Use double quotes for ALL keys and string values. No trailing commas. No comments.
+
+{"intents":[{"id":"snake_case_id","label":"Human readable label","kind":"entry|qa|action|branch|handoff|end","triggers":["phrase that activates this"],"resolution":"rag|calendar_api|template|notify","kb_needed":false,"api_needed":null}],"edges":[{"from":"intent_id","to":"intent_id","label":"optional condition"}],"gaps":["question customer asked that the bot could not answer"],"quality_score":8,"notes":"One sentence summary of what happened in this conversation"}`;
+
+  try {
+    const text = await callLLM({
+      messages: [{ role: 'user', content: prompt }],
+      system: 'You are a conversation design analyst. Return ONLY a valid JSON object with double-quoted keys. No markdown. No explanation.',
+      maxTokens: 1200,
+      provider: process.env.ANTHROPIC_API_KEY ? 'claude' : 'gemini',
+    });
+    return reply.send({ ok: true, raw: text });
+  } catch (e) {
+    fastify.log.error(e);
+    return reply.code(500).send({ ok: false, error: e.message });
+  }
+});
+
 /* ─── Quick LLM test ────────────────────────────────────────────────────────── */
 fastify.get('/api/test-llm', async (req, reply) => {
   const { callLLM } = await import('./lib/llm.js');
