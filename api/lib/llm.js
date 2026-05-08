@@ -4,7 +4,7 @@
  */
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
-const GEMINI_BASE   = 'https://generativelanguage.googleapis.com/v1/models'; /* v1 stable API */
+const GEMINI_BASE   = 'https://generativelanguage.googleapis.com/v1beta/models'; /* v1beta has gemini-1.5-flash + system_instruction */
 
 /* ─── Claude — tries models in order ────────────────────────────────────────── */
 const CLAUDE_MODELS = [
