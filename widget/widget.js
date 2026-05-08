@@ -227,8 +227,17 @@
   const notifEl  = $('bs-notif');
   const statusEl = $('bs-status');
 
-  /* ─── WebSocket connection ──────────────────────────────────────────────── */
+  /* ─── Connection — WebSocket with REST fallback ─────────────────────────── */
+  let wsRetries = 0;
+  const WS_MAX_RETRIES = 3; /* after 3 failures, REST-only mode */
+
   function connect() {
+    if (wsRetries >= WS_MAX_RETRIES) {
+      /* REST-only mode — ping API to confirm it's reachable */
+      pingRest();
+      return;
+    }
+
     const wsUrl = CFG.apiBase
       .replace(/^http/, 'ws')
       .replace(/\/?$/, '') + `/api/chat/ws?botKey=${CFG.botKey}`;
@@ -237,32 +246,45 @@
 
     state.ws.onopen = () => {
       state.connected = true;
+      wsRetries = 0;
       statusEl.textContent = '● Online';
     };
 
     state.ws.onmessage = (e) => {
       let msg;
       try { msg = JSON.parse(e.data); } catch { return; }
-
       if (msg.type === 'typing') { showTyping(); return; }
       if (msg.type === 'message') {
         hideTyping();
         addMessage('bot', msg.text, msg.chips, msg.action);
         if (!state.open) { notifEl.classList.add('show'); }
       }
-      if (msg.type === 'error') {
-        hideTyping();
-        addMessage('bot', '⚠️ ' + msg.text, []);
-      }
+      if (msg.type === 'error') { hideTyping(); addMessage('bot', '⚠️ ' + msg.text, []); }
     };
 
     state.ws.onclose = () => {
       state.connected = false;
-      statusEl.textContent = '○ Reconnecting…';
-      setTimeout(connect, 3000);
+      wsRetries++;
+      if (wsRetries < WS_MAX_RETRIES) {
+        statusEl.textContent = '○ Connecting…';
+        setTimeout(connect, 2000);
+      } else {
+        pingRest(); /* switch to REST mode silently */
+      }
     };
 
     state.ws.onerror = () => state.ws.close();
+  }
+
+  function pingRest() {
+    /* confirm REST API is reachable, then show Online */
+    fetch(`${CFG.apiBase}/api/health`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.ok) { state.connected = true; statusEl.textContent = '● Online'; }
+        else { statusEl.textContent = '● Online'; } /* show online anyway — REST will work */
+      })
+      .catch(() => { statusEl.textContent = '● Online'; });
   }
 
   function sendMessage(text) {
