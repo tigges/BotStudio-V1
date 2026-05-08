@@ -2032,10 +2032,29 @@ function flowInspector() {
       </div>
       <div class="fg"><label class="fl">Label</label><input class="fi" value="${n.label}" oninput="updateNodeLabel(${n.id},this.value)"></div>
       ${n.sub !== undefined ? `<div class="fg"><label class="fl">Description</label><input class="fi" value="${n.sub||''}" oninput="updateNodeSub(${n.id},this.value)"></div>` : ''}
-      ${n.type === 'message' ? `<div class="fg"><label class="fl">Message text</label><textarea class="fta" rows="3" placeholder="Enter bot message…"></textarea></div>` : ''}
-      ${n.type === 'condition' ? `<div class="fg"><label class="fl">Condition</label><input class="fi" placeholder="e.g. intent == 'billing'"></div><div class="fg"><label class="fl">True branch label</label><input class="fi" value="Yes"></div><div class="fg"><label class="fl">False branch label</label><input class="fi" value="No"></div>` : ''}
-      ${n.type === 'action' ? `<div class="fg"><label class="fl">Action type</label><select class="fs"><option>Assign to agent</option><option>Send email</option><option>Webhook call</option><option>Set variable</option></select></div>` : ''}
-      ${n.type === 'delay' ? `<div class="fg"><label class="fl">Delay (seconds)</label><input type="number" class="fi" value="3" min="1"></div>` : ''}
+      ${n.type === 'message' ? `<div class="fg"><label class="fl">Message text</label>
+        <textarea class="fta" rows="4" placeholder="Enter bot message…"
+          oninput="updateNodeProp(${n.id},'text',this.value)">${n.text||''}</textarea>
+        <div style="font-size:10px;color:#9ca3af;margin-top:3px">${(n.text||'').length} chars</div>
+      </div>` : ''}
+      ${n.type === 'condition' ? `
+        <div class="fg"><label class="fl">Condition expression</label>
+          <input class="fi" placeholder="e.g. intent == 'billing'" value="${n.condition||''}"
+            oninput="updateNodeProp(${n.id},'condition',this.value)"></div>
+        <div class="g2">
+          <div class="fg"><label class="fl">True branch</label>
+            <input class="fi" value="${n.trueLabel||'Yes'}" oninput="updateNodeProp(${n.id},'trueLabel',this.value)"></div>
+          <div class="fg"><label class="fl">False branch</label>
+            <input class="fi" value="${n.falseLabel||'No'}" oninput="updateNodeProp(${n.id},'falseLabel',this.value)"></div>
+        </div>` : ''}
+      ${n.type === 'action' ? `<div class="fg"><label class="fl">Action type</label>
+        <select class="fs" onchange="updateNodeProp(${n.id},'actionType',this.value)">
+          ${['Assign to agent','Send email','Webhook call','Set variable'].map(o =>
+            `<option ${n.actionType===o?'selected':''}>${o}</option>`).join('')}
+        </select></div>` : ''}
+      ${n.type === 'delay' ? `<div class="fg"><label class="fl">Delay (seconds)</label>
+        <input type="number" class="fi" value="${n.delaySeconds||3}" min="1"
+          oninput="updateNodeProp(${n.id},'delaySeconds',+this.value)"></div>` : ''}
     </div>
     <div class="ins-section">
       <p class="ins-hdr">Connections (${conns.length})</p>
@@ -2222,6 +2241,16 @@ function deleteNode(id) {
   S.flowConnections = S.flowConnections.filter(c => c.from !== id && c.to !== id);
   S.selectedNode = null;
   render();
+}
+
+function updateNodeProp(id, prop, v) {
+  const n = S.flowNodes.find(x => x.id === id);
+  if (n) n[prop] = v;
+  /* update char count for message text */
+  if (prop === 'text') {
+    const counter = document.querySelector(`[oninput*="updateNodeProp(${id},'text'"] + div`);
+    if (counter) counter.textContent = v.length + ' chars';
+  }
 }
 
 function updateNodeLabel(id, v) {
