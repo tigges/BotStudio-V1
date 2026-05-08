@@ -2824,18 +2824,19 @@ async function callLLM(userText) {
     }
 
     if (provider === 'claude') {
+      /* Claude blocks direct browser calls — must route through Railway proxy */
+      if (!proxyUrl) throw new Error('Claude requires a Proxy URL (Anthropic blocks direct browser calls). Enter your Railway URL in Proxy URL field.');
       const msgs = [];
       history.forEach(m => msgs.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
       msgs.push({ role:'user', content: userText });
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch(proxyUrl + '/api/chat', {
         method:'POST',
-        headers:{'Content-Type':'application/json','x-api-key':apiKey,
-          'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},
-        body: JSON.stringify({ model:'claude-3-haiku-20240307', max_tokens:600, system: COCO_SYSTEM_PROMPT, messages: msgs })
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ botKey:'yuzu_live_demo', message: userText, history: msgs.slice(0,-1).map(m=>({role:m.role==='assistant'?'bot':'user',content:m.content})) })
       });
       const data = await res.json();
-      if (data.error) throw new Error(data.error?.message || JSON.stringify(data.error));
-      return data.content?.[0]?.text || null;
+      if (data.error) throw new Error(data.error);
+      return data.reply || null;
     }
   } catch(e) {
     console.error('LLM error:', e);
@@ -3598,21 +3599,9 @@ async function testLlmConnection(direct = false) {
       }
       if (!reply) throw new Error(lastErr || 'all Gemini models failed');
     } else {
-      /* test Claude directly from browser */
-      const models = ['claude-3-haiku-20240307', 'claude-instant-1.2'];
-      let lastErr = '';
-      for (const m of models) {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json','x-api-key':apiKey,
-            'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},
-          body: JSON.stringify({model:m, max_tokens:10, messages:[{role:'user',content:'Say: OK'}]})
-        });
-        const d = await res.json();
-        if (!d.error && res.ok) { reply = d.content?.[0]?.text || 'OK'; break; }
-        lastErr = `${m} (${res.status}): ${d.error?.message || d.error?.type || JSON.stringify(d.error)}`;
-      }
-      if (!reply) throw new Error(lastErr || 'all Claude models failed');
+      /* Claude cannot be tested directly from browser (Anthropic blocks CORS).
+         Use "Test via Railway" instead — Railway proxies the call server-side. */
+      throw new Error('Claude cannot be called directly from a browser (CORS). Use "→ Test via Railway" which routes through your server.');
     }
 
     S.llm.testMsg = `✓ ${reply?.trim().slice(0,60)}`;
