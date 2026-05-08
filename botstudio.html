@@ -2039,11 +2039,34 @@ function flowInspector() {
     </div>
     <div class="ins-section">
       <p class="ins-hdr">Connections (${conns.length})</p>
-      ${conns.map(c => `
-        <div class="conn-badge">
-          ${c.from === n.id ? `→ Node #${c.to}` : `← Node #${c.from}`}
-          ${c.label ? `<span class="badge badge-amber" style="font-size:9px;padding:1px 5px">${c.label}</span>` : ''}
-        </div>`).join('') || '<span class="text-subtle text-xs">No connections</span>'}
+      ${conns.map(c => {
+        const other = S.flowNodes.find(x => x.id === (c.from === n.id ? c.to : c.from));
+        return `<div class="conn-badge" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <span>${c.from === n.id ? '→' : '←'} ${other?.label || '#'+c.to}</span>
+          ${c.label ? `<span class="badge badge-amber" style="font-size:9px">${c.label}</span>` : ''}
+          <button class="btn btn-ghost btn-xs" style="padding:1px 6px;color:#ef4444" onclick="removeConnection(${c.id})">✕</button>
+        </div>`;
+      }).join('') || '<div class="text-subtle text-xs mb8">No connections yet</div>'}
+
+      <div style="margin-top:8px;padding:10px;background:#f8f9fc;border-radius:8px;border:1px solid #e0e3ef">
+        <p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;margin-bottom:7px">Add connection from this node →</p>
+        <div class="fg" style="margin-bottom:6px">
+          <label class="fl">Connect to</label>
+          <select class="fs" id="conn-target-${n.id}">
+            <option value="">— select target node —</option>
+            ${S.flowNodes.filter(x => x.id !== n.id).map(x =>
+              `<option value="${x.id}">${x.label} (${x.type})</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="fg" style="margin-bottom:8px">
+          <label class="fl">Branch label <span class="text-subtle">(optional — e.g. "male", "yes", "FAQ")</span></label>
+          <input class="fi" id="conn-label-${n.id}" placeholder="e.g. male or female">
+        </div>
+        <button class="btn btn-primary btn-sm w100" onclick="addFlowConnection(${n.id})">
+          + Add connection
+        </button>
+      </div>
     </div>
     <div class="ins-section">
       <p class="ins-hdr">Position</p>
@@ -2215,6 +2238,33 @@ function updateNodeSub(id, v) {
   n.sub = v;
   const el = document.getElementById('node-' + id);
   if (el) { const sub = el.querySelector('.fn-sub'); if (sub) sub.textContent = v; }
+}
+
+function addFlowConnection(fromId) {
+  const targetEl = document.getElementById('conn-target-' + fromId);
+  const labelEl  = document.getElementById('conn-label-'  + fromId);
+  const toId     = parseInt(targetEl?.value);
+  if (!toId) { alert('Select a target node first'); return; }
+
+  /* avoid duplicate connections */
+  const exists = S.flowConnections.find(c => c.from === fromId && c.to === toId);
+  if (exists) { alert('Connection already exists'); return; }
+
+  const newId = Math.max(0, ...S.flowConnections.map(c => c.id)) + 1;
+  const label = labelEl?.value.trim() || undefined;
+  S.flowConnections.push({ id: newId, from: fromId, to: toId, ...(label ? { label } : {}) });
+
+  /* re-render inspector and connections */
+  const ins = document.querySelector('.flow-inspector');
+  if (ins) ins.innerHTML = flowInspector();
+  drawConnections();
+}
+
+function removeConnection(connId) {
+  S.flowConnections = S.flowConnections.filter(c => c.id !== connId);
+  const ins = document.querySelector('.flow-inspector');
+  if (ins) ins.innerHTML = flowInspector();
+  drawConnections();
 }
 
 function updateNodePos(id, axis, v) {
