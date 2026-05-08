@@ -55,9 +55,9 @@ fastify.get('/api/test-llm', async (req, reply) => {
   try {
     const text = await callLLM({
       messages: [{ role: 'user', content: 'Say exactly: OK' }],
-      system: 'You are a test bot. Reply with one word only.',
-      maxTokens: 10,
-      provider: 'gemini',
+      system: 'Reply with one word only.',
+      maxTokens: 20,
+      provider: req.query.provider || 'gemini',
     });
     return reply.send({ ok: true, response: text });
   } catch (e) {

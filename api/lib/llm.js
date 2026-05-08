@@ -21,13 +21,15 @@ export async function callClaude({ messages, system, maxTokens = 600, model = 'c
     body: JSON.stringify({ model, max_tokens: maxTokens, system, messages }),
   });
 
-  const data = await res.json();
-  if (data.error) throw new Error(`Claude error: ${data.error.message}`);
+  const raw = await res.text();
+  let data;
+  try { data = JSON.parse(raw); } catch { throw new Error(`Claude parse error (${res.status}): ${raw.slice(0,200)}`); }
+  if (!res.ok || data.error) throw new Error(`Claude ${res.status}: ${data.error?.message || data.error?.type || raw.slice(0,200)}`);
   return data.content?.[0]?.text || '';
 }
 
 /* ─── Gemini ─────────────────────────────────────────────────────────────────── */
-export async function callGemini({ messages, system, maxTokens = 600, model = 'gemini-2.0-flash' }) {
+export async function callGemini({ messages, system, maxTokens = 600, model = 'gemini-1.5-flash' }) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error('GEMINI_API_KEY not set');
 
