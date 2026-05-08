@@ -244,8 +244,11 @@
 
     state.ws = new WebSocket(wsUrl);
 
+    /* show Online optimistically — REST fallback works regardless */
+    state.connected = true;
+    statusEl.textContent = '● Online';
+
     state.ws.onopen = () => {
-      state.connected = true;
       wsRetries = 0;
       statusEl.textContent = '● Online';
     };
@@ -263,14 +266,13 @@
     };
 
     state.ws.onclose = () => {
-      state.connected = false;
       wsRetries++;
+      /* stay Online — REST fallback handles messages */
+      statusEl.textContent = '● Online';
       if (wsRetries < WS_MAX_RETRIES) {
-        statusEl.textContent = '○ Connecting…';
-        setTimeout(connect, 2000);
-      } else {
-        pingRest(); /* switch to REST mode silently */
+        setTimeout(connect, 3000); /* retry WS silently */
       }
+      /* after max retries, REST-only — no more reconnects, already Online */
     };
 
     state.ws.onerror = () => state.ws.close();
