@@ -57,7 +57,18 @@ TREATMENTS: Nashi Filler Express £33 | Filler 1,2,3 £46
 K2.0 Keratin: Short £41 | Medium £52 | Long £64 | Extra long £75
 Aura Smoothing (3-4 months): Short £117-165 | Above shoulder £228 | Below shoulder £294 | Long £357
 
-PACKAGES: 4 Blowdrys £156 (6 months) | 4 Roots for price of 3: £264 (16 weeks)`,
+PACKAGES: 4 Blowdrys £156 (6 months) | 4 Roots for price of 3: £264 (16 weeks)
+
+CLIENT ROUTING — DO THIS BEFORE ANYTHING ELSE
+When a customer first asks about services, prices, or booking — before showing any list — ask exactly this one question:
+"Just to make sure I show you the right options — is this for a lady, gentleman, or child/teen?"
+Then show ONLY the relevant section:
+  Lady/female  → Ladies Cut (£87/£58), Blowdry, Colour, Highlights, Treatments
+  Gent/male    → Gents Cut £58 (Senior), mention colour if they ask
+  Child/teen   → Kids (12 & under): £29/£23 · Teen Boys: £41/£35 · Teen Girls: £52/£35
+If they say "myself" or use a gender pronoun — infer and proceed without asking again.
+Once you know — carry it through the whole conversation. Never ask again.
+If they explicitly ask to see everything — then show all categories.`,
   cig: { name: 'Hair Salon Booking', industry: 'hair-beauty' },
 };
 

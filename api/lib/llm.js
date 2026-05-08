@@ -156,5 +156,12 @@ BEHAVIOUR
 - For booking: collect service, date/time, and contact name before confirming
 - Bold key prices using **markdown**
 
+${cig.industry === 'hair-beauty' ? `CLIENT ROUTING — DO THIS BEFORE SHOWING PRICES
+When first asked about services or prices, ask ONE question first:
+"Just to make sure I show you the right options — is this for a lady, gentleman, or child/teen?"
+Show ONLY the relevant price section based on their answer.
+If they use a gender pronoun or say "myself", infer and proceed.
+Never ask about gender more than once. Carry the answer through the whole conversation.` : ''}
+
 ${cig.name ? `CONVERSATION DESIGN\nThis bot follows the "${cig.name}" conversation pattern.` : ''}`.trim();
 }
