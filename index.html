@@ -1150,12 +1150,16 @@ function screenPublish() {
     <button class="btn btn-primary" onclick="navigate('design-input')">Design your bot →</button>
   </div>`;
 
-  const name     = S.botSetupData.displayName || 'MyBot';
+  const name     = S.cigData?.industry === 'hair-beauty' ? 'Coco' : (S.botSetupData.displayName || 'MyBot');
+  const avatar   = S.cigData?.industry === 'hair-beauty' ? '🍋' : '🤖';
   const slug     = name.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,10);
   const embedKey = S.publishKey || (S.publishKey = `${slug}_live_${Math.random().toString(36).slice(2,10)}`);
-  const apiBase  = 'https://botstudio-api.railway.app';
-  const shareUrl = `${location.origin}/chat/index.html?k=${embedKey}&name=${encodeURIComponent(name)}&avatar=${encodeURIComponent(S.cigData.industry==='hair-beauty'?'🍋':'🤖')}`;
-  const embedCode = `<script src="${location.origin}/widget/widget.js"\n  data-key="${embedKey}"\n  data-api="${apiBase}"\n  data-name="${name}"\n  data-color="#2255e8"\n  data-avatar="${S.cigData.industry==='hair-beauty'?'🍋':'🤖'}"\n  data-delay="5">\n<\/script>`;
+  /* use the known-working Railway URL; fall back to a placeholder */
+  const apiBase  = S.llm.proxyUrl || 'https://botstudio-v1-production.up.railway.app';
+  /* base URL includes /BotStudio-V1/ sub-path on GitHub Pages */
+  const baseUrl  = location.origin + location.pathname.replace(/\/[^/]*$/, '');
+  const shareUrl = `${baseUrl}/chat/?k=${embedKey}&api=${encodeURIComponent(apiBase)}&name=${encodeURIComponent(name)}&avatar=${encodeURIComponent(avatar)}`;
+  const embedCode = `<script src="${baseUrl}/widget/widget.js"\n  data-key="${embedKey}"\n  data-api="${apiBase}"\n  data-name="${name}"\n  data-color="#2255e8"\n  data-avatar="${avatar}"\n  data-delay="5">\n<\/script>`;
 
   return `
   <div style="max-width:640px">
