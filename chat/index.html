@@ -212,13 +212,26 @@
 
     if (action?.type === 'confirmed') {
       const b = action.booking;
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=Yuzu+Hair+Beauty+5+Dickens+Yard+Ealing+W5+2TD`;
       const card = document.createElement('div');
-      card.style.cssText = 'background:#fff;border:2px solid var(--color);border-radius:12px;padding:13px;margin-top:7px;font-size:12px';
-      card.innerHTML = `<strong style="font-size:14px;color:var(--color)">Booking confirmed! 🎉</strong>
-        <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">
-          <div><span style="color:#6b7280">Service: </span><strong>${b.service}</strong></div>
-          <div><span style="color:#6b7280">Date: </span><strong>${b.dateLabel}</strong></div>
-          <div><span style="color:#6b7280">Ref: </span><code style="background:#eef2fd;color:var(--color);padding:1px 6px;border-radius:4px">${b.ref}</code></div>
+      card.style.cssText = 'background:#fff;border:2px solid var(--color,#2255e8);border-radius:14px;padding:16px;margin-top:8px;font-size:13px';
+      card.innerHTML = `
+        <div style="text-align:center;margin-bottom:12px">
+          <div style="font-size:26px">🎉</div>
+          <strong style="font-size:15px;color:var(--color,#2255e8)">Booking confirmed!</strong>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between"><span style="color:#6b7280">Service</span><strong>${b.service}</strong></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#6b7280">Date & time</span><strong>${b.dateLabel}</strong></div>
+          ${b.duration ? `<div style="display:flex;justify-content:space-between"><span style="color:#6b7280">Duration</span><strong>${b.duration}</strong></div>` : ''}
+          ${b.price ? `<div style="display:flex;justify-content:space-between"><span style="color:#6b7280">Price</span><strong>${b.price}</strong></div>` : ''}
+          <div style="display:flex;justify-content:space-between"><span style="color:#6b7280">Name</span><strong>${b.customerName}</strong></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#6b7280">Reference</span><code style="background:#eef2fd;color:var(--color,#2255e8);padding:2px 8px;border-radius:5px;font-size:12px">${b.ref}</code></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <a href="${mapsUrl}" target="_blank" style="flex:1;padding:9px;background:#f8f9fc;border:1px solid #e5e7eb;border-radius:9px;text-align:center;font-size:12px;font-weight:500;color:#374151;text-decoration:none">📍 Directions</a>
+          <button style="flex:1;padding:9px;background:#f8f9fc;border:1px solid #e5e7eb;border-radius:9px;font-size:12px;font-weight:500;color:#374151;cursor:pointer"
+            onclick="this.textContent='✓ Saved!';this.style.background='#d1fae5';this.style.color='#065f46'">📅 Add to calendar</button>
         </div>`;
       wrap.appendChild(card);
     }

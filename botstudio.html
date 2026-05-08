@@ -1162,17 +1162,39 @@ function screenPublish() {
   const shareUrl = `${baseUrl}/chat/?k=${embedKey}&api=${encodeURIComponent(apiBase)}&name=${encodeURIComponent(name)}&avatar=${encodeURIComponent(avatar)}`;
   const embedCode = `<script src="${baseUrl}/widget/widget.js"\n  data-key="${embedKey}"\n  data-api="${apiBase}"\n  data-name="${name}"\n  data-color="#2255e8"\n  data-avatar="${avatar}"\n  data-delay="5">\n<\/script>`;
 
+  /* checklist state */
+  if (!S.publishChecks) S.publishChecks = { tested:false, script:false, link:false };
+
   return `
   <div style="max-width:640px">
-    <div class="card mb14" style="border-color:#10b981;background:#f0fdf8">
-      <div class="flex items-center gap10 mb10">
-        <div style="font-size:32px">🚀</div>
-        <div><div style="font-size:16px;font-weight:600;color:#065f46">Ready to publish</div>
-        <div style="font-size:12px;color:#059669">Bot designed · knowledge gathered · ready to go live</div></div>
+
+    <!-- Pre-publish checklist -->
+    <div class="card mb14">
+      <p class="card-title mb4">Before you go live</p>
+      <p class="card-sub">Three steps — takes 2 minutes.</p>
+      <div style="margin-top:10px">
+        ${[
+          ['tested', '1', 'Test the conversation', 'Open Preview and have a full conversation — greet, ask about services, book.', `<button class="btn btn-primary btn-sm" onclick="S.publishChecks.tested=true;navigate('emulator')">Open Preview →</button>`, S.publishChecks.tested],
+          ['script', '2', 'Check the conversation script', 'Review & Approve → read the conversation script — does it match your brand voice?', `<button class="btn btn-secondary btn-sm" onclick="S.publishChecks.script=true;navigate('cig-review')">Review design →</button>`, S.publishChecks.script],
+          ['link',   '3', 'Test the share link', 'Open the direct link below in a fresh browser tab — check it loads and responds.', `<button class="btn btn-secondary btn-sm" onclick="window.open('${shareUrl}','_blank');S.publishChecks.link=true;render()">Open share link →</button>`, S.publishChecks.link],
+        ].map(([key, num, title, desc, btn, done]) => `
+          <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #f0f2f7;align-items:flex-start">
+            <div style="width:24px;height:24px;border-radius:50%;background:${done?'#10b981':'#f0f2f7'};color:${done?'#fff':'#9ca3af'};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px">
+              ${done ? '✓' : num}
+            </div>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:600;color:#1a1d2e;margin-bottom:2px">${title}</div>
+              <div style="font-size:11px;color:#6b7280;margin-bottom:6px">${desc}</div>
+              ${done ? `<span style="font-size:11px;color:#10b981;font-weight:500">✓ Done</span>` : btn}
+            </div>
+          </div>`).join('')}
       </div>
-      <div class="flex gap8">
-        <button class="btn btn-green" onclick="finalPublish()">Go live now</button>
-        <button class="btn btn-ghost btn-sm" onclick="navigate('emulator')">Preview first</button>
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+        ${Object.values(S.publishChecks).every(Boolean)
+          ? `<button class="btn btn-green" onclick="finalPublish()">🚀 Go live now</button>
+             <span style="font-size:11px;color:#059669">All checks passed — ready to deploy</span>`
+          : `<button class="btn btn-ghost btn-sm" onclick="finalPublish()" style="opacity:.6">Skip checks → Go live anyway</button>
+             <span style="font-size:11px;color:#9ca3af">${Object.values(S.publishChecks).filter(Boolean).length}/3 checks done</span>`}
       </div>
     </div>
 

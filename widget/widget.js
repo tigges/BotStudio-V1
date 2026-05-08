@@ -346,16 +346,34 @@
     /* booking confirmation card */
     if (action?.type === 'confirmed') {
       const b = action.booking;
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('Yuzu Hair Beauty 5 Dickens Yard Ealing W5 2TD')}`;
       const card = document.createElement('div');
       card.className = 'bs-booking-card';
       card.innerHTML = `
-        <div class="title">Booking confirmed 🎉</div>
+        <div style="text-align:center;margin-bottom:12px">
+          <div style="font-size:28px;margin-bottom:4px">🎉</div>
+          <div style="font-size:15px;font-weight:700;color:var(--bs-color,${CFG.color})">Booking confirmed!</div>
+        </div>
         <div class="row"><span class="label">Service</span><span class="value">${b.service}</span></div>
-        <div class="row"><span class="label">Date</span><span class="value">${b.dateLabel}</span></div>
+        <div class="row"><span class="label">Date & time</span><span class="value">${b.dateLabel}</span></div>
+        ${b.duration ? `<div class="row"><span class="label">Duration</span><span class="value">${b.duration}</span></div>` : ''}
+        ${b.price ? `<div class="row"><span class="label">Price</span><span class="value">${b.price}</span></div>` : ''}
         <div class="row"><span class="label">Name</span><span class="value">${b.customerName}</span></div>
-        <div class="row"><span class="label">Ref</span><span class="value"><span class="ref">${b.ref}</span></span></div>
+        <div class="row"><span class="label">Reference</span><span class="value"><span class="ref">${b.ref}</span></span></div>
+        <div style="display:flex;gap:6px;margin-top:12px">
+          <a href="${mapsUrl}" target="_blank"
+             style="flex:1;padding:8px 6px;background:#f8f9fc;border:1px solid #e0e3ef;border-radius:8px;text-align:center;font-size:11px;font-weight:500;color:#374151;text-decoration:none">
+            📍 Directions
+          </a>
+          <button onclick="this.textContent='✓ Saved!';this.style.background='#d1fae5';this.style.color='#065f46'"
+             style="flex:1;padding:8px 6px;background:#f8f9fc;border:1px solid #e0e3ef;border-radius:8px;font-size:11px;font-weight:500;color:#374151;cursor:pointer">
+            📅 Add to calendar
+          </button>
+        </div>
       `;
       wrapEl.appendChild(card);
+      /* scroll to card */
+      setTimeout(() => { messagesEl.scrollTop = messagesEl.scrollHeight; }, 50);
     }
 
     /* quick reply chips */
