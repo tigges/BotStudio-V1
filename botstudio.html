@@ -3208,7 +3208,14 @@ RULES
 - For availability: use realistic fictional slots (Tue–Sat this/next week)
 - Use **bold** for prices and key facts
 - Booking confirmation format: service, total price, duration, date/time, ref #YZU-[3digits]
-- Never invent prices not in this prompt. Say "I'll need to check on that" for unknowns`;
+- Never invent prices not in this prompt. Say "I'll need to check on that" for unknowns
+
+AFTER CONFIRMING ANY BOOKING
+Always offer a reminder check-in:
+"Shall I send you a quick confirmation message 48 hours before your appointment so you can confirm you're still coming?"
+If yes: confirm "Perfect — we'll send you a reminder on [date, 2 days before]. If anything changes, just message us here."
+If no: "No problem — we'll see you on [date]. Looking forward to it!"
+This applies to every booking — cuts, colour, treatments, all services.`;
 
 /* ─── LLM call (Gemini or Claude, direct from browser) ──────────────────── */
 async function callLLM(userText) {
@@ -3277,8 +3284,8 @@ async function callLLM(userText) {
 
 /* ─── Pattern extraction from a real conversation ───────────────────────── */
 async function extractPatterns() {
-  const { provider, apiKey } = S.llm;
-  if (!provider || !apiKey || S.llmHistory.length < 4) return;
+  const { provider, apiKey, proxyUrl } = S.llm;
+  if (!provider || (!apiKey && !proxyUrl) || S.llmHistory.length < 4) return;
   S.llm.loading = true;
   render();
 
@@ -3288,40 +3295,56 @@ async function extractPatterns() {
 CONVERSATION:
 ${transcript}
 
-Return ONLY valid JSON in this exact structure:
-{
-  "intents": [{"id":"snake_case","label":"Human label","kind":"entry|qa|action|branch|handoff|end","triggers":["phrase1","phrase2"],"resolution":"rag|calendar_api|template|notify","kb_needed":true/false,"api_needed":null/"calendar"/"email"}],
-  "edges": [{"from":"intent_id","to":"intent_id","label":"optional condition"}],
-  "gaps": ["thing customer asked that bot couldn't answer"],
-  "quality_score": 1-10,
-  "notes": "one sentence summary of the conversation pattern"
-}`;
+Return ONLY valid JSON:
+{"intents":[{"id":"snake_case","label":"Human label","kind":"entry|qa|action|branch|handoff|end","triggers":["phrase1"],"resolution":"rag|calendar_api|template|notify","kb_needed":true,"api_needed":null}],"edges":[{"from":"id","to":"id","label":"optional"}],"gaps":["unanswered questions"],"quality_score":7,"notes":"one sentence summary"}`;
 
   try {
     let raw = null;
-    if (provider === 'gemini') {
+
+    if (provider === 'gemini' && apiKey) {
+      /* discover best model */
+      let model = 'gemini-2.5-flash';
+      try {
+        const lr = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const ld = await lr.json();
+        if (ld.models?.length) {
+          model = ld.models.filter(m=>m.supportedGenerationMethods?.includes('generateContent'))
+                           .map(m=>m.name.replace('models/',''))[0] || model;
+        }
+      } catch(_) {}
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         { method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ contents:[{ role:'user', parts:[{ text: extractPrompt }] }],
-            generationConfig:{ responseMimeType:'application/json', maxOutputTokens:1024 } })
+          body: JSON.stringify({ contents:[{role:'user',parts:[{text:extractPrompt}]}],
+            generationConfig:{ maxOutputTokens:1024 } })
         }
       );
       const data = await res.json();
       raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
     } else if (provider === 'claude') {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST',
-        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},
-        body: JSON.stringify({ model:'claude-3-5-haiku-20241022', max_tokens:1024,
-          messages:[{ role:'user', content: extractPrompt }] })
+      /* Claude must go through proxy (CORS) */
+      const endpoint = proxyUrl
+        ? `${proxyUrl}/api/chat`
+        : null;
+      if (!endpoint) throw new Error('Claude needs a Proxy URL — enter your Railway URL in Settings');
+      const res = await fetch(endpoint, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          botKey: 'yuzu_live_demo',
+          message: extractPrompt,
+          history: [],
+          _raw: true   /* flag: return raw LLM response */
+        })
       });
       const data = await res.json();
-      raw = data.content?.[0]?.text;
+      raw = data.reply || data.response;
     }
-    /* parse JSON — strip markdown code fences if present */
+
     const jsonStr = (raw||'').replace(/```json?\n?/g,'').replace(/```/g,'').trim();
-    S.llmExtracted = JSON.parse(jsonStr);
+    /* find JSON object in response */
+    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+    S.llmExtracted = JSON.parse(jsonMatch?.[0] || jsonStr);
   } catch(e) {
     S.llmExtracted = { error: e.message };
   }
