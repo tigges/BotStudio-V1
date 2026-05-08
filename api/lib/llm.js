@@ -7,7 +7,7 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const GEMINI_BASE   = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 /* ─── Claude ────────────────────────────────────────────────────────────────── */
-export async function callClaude({ messages, system, maxTokens = 600, model = 'claude-3-5-haiku-20241022' }) {
+export async function callClaude({ messages, system, maxTokens = 600, model = 'claude-3-haiku-20240307' }) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error('ANTHROPIC_API_KEY not set');
 
@@ -29,7 +29,7 @@ export async function callClaude({ messages, system, maxTokens = 600, model = 'c
 }
 
 /* ─── Gemini ─────────────────────────────────────────────────────────────────── */
-export async function callGemini({ messages, system, maxTokens = 600, model = 'gemini-1.5-flash' }) {
+export async function callGemini({ messages, system, maxTokens = 600, model = 'gemini-pro' }) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error('GEMINI_API_KEY not set');
 
