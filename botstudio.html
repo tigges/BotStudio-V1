@@ -517,8 +517,10 @@ const S = {
     apiKey:   localStorage.getItem('bs_llm_key')      || '',
     proxyUrl: localStorage.getItem('bs_proxy_url')    || '',
     enabled:  localStorage.getItem('bs_llm_on') === '1',
-    loading: false,
+    loading:      false,
     showSettings: false,
+    testing:      false,
+    testMsg:      '',
   },
   /* Supabase cloud storage */
   db: {
@@ -3558,6 +3560,63 @@ function saveLlmConfig() {
   localStorage.setItem('bs_llm_on',       S.llm.enabled ? '1' : '0');
 }
 
+async function testLlmConnection() {
+  const { provider, apiKey, proxyUrl } = S.llm;
+  if (!provider) { S.llm.testMsg = '✕ Select a provider first'; render(); return; }
+  S.llm.testing = true; S.llm.testMsg = ''; render();
+
+  try {
+    let reply = '';
+
+    if (proxyUrl) {
+      /* test through Railway proxy */
+      const res = await fetch(`${proxyUrl}/api/test-llm?provider=${provider}`);
+      const data = await res.json();
+      if (data.ok) { reply = data.response; }
+      else throw new Error(data.error || 'proxy returned error');
+    } else if (!apiKey) {
+      throw new Error('Enter an API key or Proxy URL');
+    } else if (provider === 'gemini') {
+      /* test Gemini directly from browser */
+      const models = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
+      let lastErr = '';
+      for (const m of models) {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1/models/${m}:generateContent?key=${apiKey}`,
+          { method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ contents:[{role:'user',parts:[{text:'Say: OK'}]}], generationConfig:{maxOutputTokens:5} }) }
+        );
+        const d = await res.json();
+        if (!d.error) { reply = d.candidates?.[0]?.content?.parts?.[0]?.text || 'OK'; break; }
+        lastErr = `${m}: ${d.error.message}`;
+      }
+      if (!reply) throw new Error(lastErr || 'all Gemini models failed');
+    } else {
+      /* test Claude directly from browser */
+      const models = ['claude-3-haiku-20240307', 'claude-instant-1.2'];
+      let lastErr = '';
+      for (const m of models) {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json','x-api-key':apiKey,
+            'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},
+          body: JSON.stringify({model:m, max_tokens:10, messages:[{role:'user',content:'Say: OK'}]})
+        });
+        const d = await res.json();
+        if (!d.error && res.ok) { reply = d.content?.[0]?.text || 'OK'; break; }
+        lastErr = `${m} (${res.status}): ${d.error?.message || d.error?.type || JSON.stringify(d.error)}`;
+      }
+      if (!reply) throw new Error(lastErr || 'all Claude models failed');
+    }
+
+    S.llm.testMsg = `✓ Working — "${reply?.trim().slice(0,40)}"`;
+  } catch(e) {
+    S.llm.testMsg = `✕ ${e.message}`;
+  }
+  S.llm.testing = false;
+  render();
+}
+
 /* ===============================================================================
    GOOGLE DRIVE STORAGE
    Scope: drive.appdata — hidden app folder, 15 GB, free
@@ -3897,10 +3956,20 @@ create policy "open" on patterns for all using (true) with check (true);`;
           </div>
         </div>
       </div>
-      <div class="flex items-center gap8">
+      <div class="flex items-center gap8 mb8">
         <label class="toggle"><input type="checkbox" ${S.llm.enabled?'checked':''}
           onchange="S.llm.enabled=this.checked;saveLlmConfig();render()"><span class="toggle-slider"></span></label>
         <span style="font-size:12px">Enable AI responses in Preview</span>
+      </div>
+      <div class="flex items-center gap8">
+        <button class="btn btn-secondary btn-sm" onclick="testLlmConnection()" ${S.llm.testing?'disabled':''}>
+          ${S.llm.testing ? '⏳ Testing…' : '→ Test connection'}
+        </button>
+        ${S.llm.testMsg ? `<span style="font-size:11px;color:${S.llm.testMsg.startsWith('✓')?'#059669':'#991b1b'}">${S.llm.testMsg}</span>` : ''}
+      </div>
+      <div style="font-size:10px;color:#9ca3af;margin-top:6px">
+        Key stored in <code>localStorage</code> (browser only) — ${S.llm.apiKey ? `<strong style="color:#059669">key is saved</strong>` : '<span style="color:#f59e0b">no key entered</span>'}
+        ${S.llm.proxyUrl ? ` · Proxy: <strong style="color:#059669">active</strong>` : ''}
       </div>` : ''}
     </div>
 
