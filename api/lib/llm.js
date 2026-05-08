@@ -44,12 +44,35 @@ export async function callClaude({ messages, system, maxTokens = 600, model }) {
 }
 
 /* ─── Gemini — tries models in order ────────────────────────────────────────── */
-const GEMINI_MODELS = [
+/* fallback static list — used if discovery fails */
+const GEMINI_MODELS_FALLBACK = [
+  'gemini-2.0-flash-exp',
+  'gemini-2.0-flash-lite',
+  'gemini-1.5-flash-latest',
+  'gemini-1.5-flash-8b-latest',
   'gemini-1.5-flash',
+  'gemini-1.5-pro-latest',
   'gemini-1.5-pro',
   'gemini-pro',
   'gemini-1.0-pro',
 ];
+
+let _geminiModelsCache = null;
+
+async function discoverGeminiModels(key) {
+  if (_geminiModelsCache) return _geminiModelsCache;
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+    const data = await res.json();
+    if (data.error) { console.warn('[gemini] model discovery failed:', data.error.message); return null; }
+    const models = (data.models || [])
+      .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+      .map(m => m.name.replace('models/', ''));
+    console.log('[gemini] discovered models:', models.slice(0, 5).join(', '));
+    _geminiModelsCache = models;
+    return models;
+  } catch (e) { console.warn('[gemini] discovery error:', e.message); return null; }
+}
 
 export async function callGemini({ messages, system, maxTokens = 600, model }) {
   const key = process.env.GEMINI_API_KEY;
@@ -60,7 +83,9 @@ export async function callGemini({ messages, system, maxTokens = 600, model }) {
     parts: [{ text: m.content }],
   }));
 
-  const modelsToTry = model ? [model] : GEMINI_MODELS;
+  /* discover available models or fall back to static list */
+  const discovered = model ? null : await discoverGeminiModels(key);
+  const modelsToTry = model ? [model] : (discovered || GEMINI_MODELS_FALLBACK);
   const allErrs = [];
 
   for (const m of modelsToTry) {

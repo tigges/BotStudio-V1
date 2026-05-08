@@ -56,11 +56,11 @@ fastify.get('/api/gemini-models', async (req, reply) => {
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
     const data = await res.json();
-    if (data.error) return reply.code(400).send({ error: data.error.message });
+    if (data.error) return reply.code(400).send({ ok: false, error: data.error.message, hint: 'Key may not have Generative Language API enabled' });
     const models = (data.models || [])
       .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
       .map(m => m.name.replace('models/', ''));
-    return reply.send({ count: models.length, models });
+    return reply.send({ ok: true, count: models.length, models });
   } catch (e) {
     return reply.code(500).send({ error: e.message });
   }
