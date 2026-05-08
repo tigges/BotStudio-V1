@@ -3560,20 +3560,20 @@ function saveLlmConfig() {
   localStorage.setItem('bs_llm_on',       S.llm.enabled ? '1' : '0');
 }
 
-async function testLlmConnection() {
+async function testLlmConnection(direct = false) {
   const { provider, apiKey, proxyUrl } = S.llm;
   if (!provider) { S.llm.testMsg = '✕ Select a provider first'; render(); return; }
-  S.llm.testing = true; S.llm.testMsg = ''; render();
+  S.llm.testing = direct ? 'direct' : 'proxy'; S.llm.testMsg = ''; render();
 
   try {
     let reply = '';
 
-    if (proxyUrl) {
-      /* test through Railway proxy */
+    if (!direct && proxyUrl) {
+      /* test through Railway proxy — tests Railway's env vars */
       const res = await fetch(`${proxyUrl}/api/test-llm?provider=${provider}`);
       const data = await res.json();
-      if (data.ok) { reply = data.response; }
-      else throw new Error(data.error || 'proxy returned error');
+      if (data.ok) { reply = `[via Railway] ${data.response}`; }
+      else throw new Error(`[Railway] ${data.error || 'proxy returned error'}`);
     } else if (!apiKey) {
       throw new Error('Enter an API key or Proxy URL');
     } else if (provider === 'gemini') {
@@ -3609,7 +3609,7 @@ async function testLlmConnection() {
       if (!reply) throw new Error(lastErr || 'all Claude models failed');
     }
 
-    S.llm.testMsg = `✓ Working — "${reply?.trim().slice(0,40)}"`;
+    S.llm.testMsg = `✓ ${reply?.trim().slice(0,60)}`;
   } catch(e) {
     S.llm.testMsg = `✕ ${e.message}`;
   }
@@ -3961,12 +3961,15 @@ create policy "open" on patterns for all using (true) with check (true);`;
           onchange="S.llm.enabled=this.checked;saveLlmConfig();render()"><span class="toggle-slider"></span></label>
         <span style="font-size:12px">Enable AI responses in Preview</span>
       </div>
-      <div class="flex items-center gap8">
-        <button class="btn btn-secondary btn-sm" onclick="testLlmConnection()" ${S.llm.testing?'disabled':''}>
-          ${S.llm.testing ? '⏳ Testing…' : '→ Test connection'}
+      <div class="flex items-center gap8 flex-wrap">
+        <button class="btn btn-secondary btn-sm" onclick="testLlmConnection(false)" ${S.llm.testing?'disabled':''}>
+          ${S.llm.testing === 'proxy' ? '⏳ Testing proxy…' : '→ Test via Railway'}
         </button>
-        ${S.llm.testMsg ? `<span style="font-size:11px;color:${S.llm.testMsg.startsWith('✓')?'#059669':'#991b1b'}">${S.llm.testMsg}</span>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="testLlmConnection(true)" ${S.llm.testing?'disabled':''}>
+          ${S.llm.testing === 'direct' ? '⏳ Testing…' : '→ Test direct (browser)'}
+        </button>
       </div>
+      ${S.llm.testMsg ? `<div style="font-size:11px;margin-top:5px;padding:6px 10px;border-radius:6px;background:${S.llm.testMsg.startsWith('✓')?'#f0fdf8':'#fef2f2'};color:${S.llm.testMsg.startsWith('✓')?'#065f46':'#991b1b'};line-height:1.5">${S.llm.testMsg}</div>` : ''}
       <div style="font-size:10px;color:#9ca3af;margin-top:6px">
         Key stored in <code>localStorage</code> (browser only) — ${S.llm.apiKey ? `<strong style="color:#059669">key is saved</strong>` : '<span style="color:#f59e0b">no key entered</span>'}
         ${S.llm.proxyUrl ? ` · Proxy: <strong style="color:#059669">active</strong>` : ''}
