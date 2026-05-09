@@ -3556,7 +3556,9 @@ function screenEmulator() {
             <p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#f59e0b;margin:10px 0 5px">Gaps found</p>
             ${S.llmExtracted.gaps.map(g=>`<div style="font-size:11px;color:#92400e;margin-bottom:3px">⚠ ${g}</div>`).join('')}` : ''}
           <div style="display:flex;gap:6px;margin-top:10px">
-            <button class="btn btn-primary btn-sm" style="flex:1" onclick="addToPatternLib()">Save to library →</button>
+            <button class="btn btn-${S.llmExtracted._saved?'ghost':'primary'} btn-sm" style="flex:1" onclick="addToPatternLib()">
+              ${S.llmExtracted._saved ? '✓ Saved' : 'Save to library →'}
+            </button>
             <button class="btn btn-ghost btn-sm" onclick="extractPatterns()">↺ Re-extract</button>
           </div>
         `}
@@ -3630,14 +3632,72 @@ function toggleLlmSettings() { S.llm.showSettings = !S.llm.showSettings; render(
 function setLlmProvider(p) { S.llm.provider = p; S.llm.enabled = false; if (!p) S.llm.apiKey=''; render(); }
 async function addToPatternLib() {
   if (!S.llmExtracted || (S.llmExtracted.error && !S.llmExtracted.notes)) return;
-  const saved = [];
-  if (S.db.connected) { await dbSavePattern(S.llmExtracted); await dbSaveConversation(); saved.push('Supabase'); }
-  if (S.gd.connected) { await gdSavePattern(S.llmExtracted); await gdSaveConversation({ turns: S.llmHistory, extracted: S.llmExtracted }); saved.push('Google Drive'); }
-  if (saved.length) {
-    alert('Pattern saved to: ' + saved.join(' + ') + '\nConversation logged. It will improve future templates for this industry.');
+
+  const results = [];
+  const errors  = [];
+
+  /* Supabase */
+  if (S.db.url && S.db.anonKey) {
+    if (!S.db.connected) await dbTest(); /* auto-connect if creds stored */
+    if (S.db.connected) {
+      const r1 = await dbSavePatternVerbose(S.llmExtracted);
+      const r2 = await dbSaveConversationVerbose();
+      if (r1.ok) results.push('Supabase (pattern)');
+      else errors.push('Supabase pattern: ' + r1.error);
+      if (r2.ok) results.push('Supabase (conversation)');
+      else errors.push('Supabase conversation: ' + r2.error);
+    } else {
+      errors.push('Supabase: connection failed — check URL and anon key in Settings');
+    }
   } else {
-    alert('Pattern extracted (shown below).\nConnect Supabase or Google Drive in Settings to persist it to the pattern library.');
+    errors.push('Supabase: not configured — add URL and anon key in Platform → Settings');
   }
+
+  /* Google Drive */
+  if (S.gd.connected) {
+    try { await gdSavePattern(S.llmExtracted); results.push('Google Drive'); }
+    catch(e) { errors.push('Google Drive: ' + e.message); }
+  }
+
+  const msg = [
+    results.length ? '✓ Saved to: ' + results.join(', ') : '',
+    errors.length  ? '✕ Issues:\n  ' + errors.join('\n  ') : '',
+    !results.length && !errors.length ? 'No storage connected — go to Platform → Settings to connect Supabase or Google Drive.' : '',
+  ].filter(Boolean).join('\n\n');
+
+  alert(msg);
+  if (results.length) { S.llmExtracted._saved = true; render(); }
+}
+
+async function dbSavePatternVerbose(pattern) {
+  try {
+    const r = await DB.req('patterns', 'POST', {
+      industry:      S.cigData?.industry || 'general',
+      cig:           pattern,
+      quality_score: pattern.quality_score || null,
+      notes:         pattern.notes || null,
+    });
+    if (r && (Array.isArray(r) || r.id)) return { ok: true };
+    /* Supabase returns error objects */
+    const err = r?.message || r?.error || JSON.stringify(r);
+    return { ok: false, error: err };
+  } catch(e) { return { ok: false, error: e.message }; }
+}
+
+async function dbSaveConversationVerbose() {
+  if (S.llmHistory.length < 2) return { ok: false, error: 'conversation too short (<2 turns)' };
+  try {
+    const r = await DB.req('conversations', 'POST', {
+      session_id:    `emu-${Date.now()}`,
+      provider:      S.llm.provider || 'keywords',
+      turns:         S.llmHistory,
+      outcome:       'completed',
+      extracted_cig: S.llmExtracted || null,
+      quality_score: S.llmExtracted?.quality_score || null,
+    });
+    if (r && (Array.isArray(r) || r.id)) return { ok: true };
+    return { ok: false, error: r?.message || r?.error || JSON.stringify(r) };
+  } catch(e) { return { ok: false, error: e.message }; }
 }
 
 function emuSend(txt) {
