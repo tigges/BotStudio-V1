@@ -1,0 +1,20 @@
+{
+  "name": "BotStudio",
+  "install": "cd api && npm ci",
+  "terminals": [
+    {
+      "name": "api",
+      "description": "BotStudio backend (Fastify) on http://localhost:3001 — REST + WebSocket chat, /api/health. Reads LLM keys from ANTHROPIC_API_KEY/GEMINI_API_KEY (falls back to CLAUDE_API_KEY) and optional SUPABASE_URL/SUPABASE_SERVICE_KEY.",
+      "command": "cd api && ANTHROPIC_API_KEY=\"${ANTHROPIC_API_KEY:-$CLAUDE_API_KEY}\" JWT_SECRET=\"${JWT_SECRET:-dev-local-jwt-secret-change-me-32chars}\" NODE_ENV=development PORT=3001 ALLOWED_ORIGINS=\"*\" node server.js"
+    },
+    {
+      "name": "web",
+      "description": "Static file server for the dashboard (index.html/botstudio.html), direct chat page (chat/) and widget demo (widget/demo.html) on http://localhost:8080.",
+      "command": "python3 -m http.server 8080 --bind 0.0.0.0"
+    }
+  ],
+  "ports": [
+    { "name": "api", "port": 3001 },
+    { "name": "web", "port": 8080 }
+  ]
+}
