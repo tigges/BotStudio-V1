@@ -3678,8 +3678,7 @@ async function dbSavePatternVerbose(pattern) {
       notes:         pattern.notes || null,
     });
     if (r && (Array.isArray(r) || r.id)) return { ok: true };
-    /* Supabase returns error objects */
-    const err = r?.message || r?.error || JSON.stringify(r);
+    const err = r?._err || r?.message || r?.error || r?.hint || (r ? JSON.stringify(r) : 'No response from Supabase');
     return { ok: false, error: err };
   } catch(e) { return { ok: false, error: e.message }; }
 }
@@ -3696,7 +3695,7 @@ async function dbSaveConversationVerbose() {
       quality_score: S.llmExtracted?.quality_score || null,
     });
     if (r && (Array.isArray(r) || r.id)) return { ok: true };
-    return { ok: false, error: r?.message || r?.error || JSON.stringify(r) };
+    return { ok: false, error: r?._err || r?.message || r?.error || r?.hint || (r ? JSON.stringify(r) : 'No response from Supabase') };
   } catch(e) { return { ok: false, error: e.message }; }
 }
 
@@ -4053,7 +4052,7 @@ function deleteKB(id) { S.kbItems = S.kbItems.filter(i => i.id !== id); render()
 const DB = {
   async req(path, method = 'GET', body = null) {
     const { url, anonKey } = S.db;
-    if (!url || !anonKey) return null;
+    if (!url || !anonKey) return { _err: 'Missing URL or anon key' };
     try {
       const res = await fetch(`${url}/rest/v1/${path}`, {
         method,
@@ -4066,12 +4065,24 @@ const DB = {
         body: body ? JSON.stringify(body) : undefined,
       });
       const text = await res.text();
-      return text ? JSON.parse(text) : null;
-    } catch(e) { console.warn('DB error:', e); return null; }
+      return text ? JSON.parse(text) : (res.ok ? [] : { _err: `HTTP ${res.status}` });
+    } catch(e) {
+      console.warn('DB error:', e);
+      return { _err: e.message || 'Network error — check the Project URL' };
+    }
   },
 };
 
 async function dbTest() {
+  /* Validate URL format before hitting the network */
+  const urlVal = (S.db.url || '').trim();
+  if (urlVal && !/^https?:\/\/.+\.supabase\.co\/?$/.test(urlVal)) {
+    S.db.connected = false;
+    S.db.testMsg = 'Error: Project URL should be https://xxxx.supabase.co — check you haven\'t pasted the wrong value';
+    render();
+    return;
+  }
+
   S.db.testing = true; S.db.testMsg = ''; render();
   const r = await DB.req('bots?limit=1&select=id');
   S.db.testing = false;
@@ -4083,7 +4094,8 @@ async function dbTest() {
     await dbLoadBots();
   } else {
     S.db.connected = false;
-    const errText = r?.message || r?.error || JSON.stringify(r) || 'Check URL and anon key';
+    const errText = r?._err || r?.message || r?.error || r?.hint
+      || (r ? JSON.stringify(r) : 'Check URL and anon key');
     S.db.testMsg = 'Error: ' + errText;
   }
   render();
